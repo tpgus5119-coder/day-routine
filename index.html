@@ -1,0 +1,1941 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+    <title>Day Routine</title>
+    <!-- PWA Meta Tags -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#6366f1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Day Routine">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <script>
+        // Register Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function () {
+                navigator.serviceWorker.register('sw.js').then(function (registration) {
+                    console.log('ServiceWorker registered:', registration.scope);
+                }).catch(function (error) {
+                    console.log('ServiceWorker registration failed:', error);
+                });
+            });
+        }
+    </script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box
+        }
+
+        html,
+        body {
+            height: 100%;
+            overflow: hidden;
+            background: #1a1a2e
+        }
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center
+        }
+
+        :root {
+            --bg: #f5f5f8;
+            --card: #fff;
+            --input: #f0f0f4;
+            --accent: #6366f1;
+            --text: #1a1a2e;
+            --text2: #5a5a70;
+            --text3: #9a9ab0;
+            --border: rgba(0, 0, 0, .08)
+        }
+
+        .dark {
+            --bg: #0a0a14;
+            --card: #16162a;
+            --input: #1e1e3a;
+            --accent: #818cf8;
+            --text: #fff;
+            --text2: #a0a0b8;
+            --text3: #6b6b80;
+            --border: rgba(255, 255, 255, .08)
+        }
+
+        .alarm-popup {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, .6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            animation: fadeIn .3s
+        }
+
+        .alarm-popup-inner {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            padding: 32px 48px;
+            border-radius: 24px;
+            text-align: center;
+            color: #fff;
+            box-shadow: 0 32px 64px rgba(0, 0, 0, .4);
+            animation: popIn .4s
+        }
+
+        .alarm-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+            animation: shake 1s infinite
+        }
+
+        .alarm-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 8px
+        }
+
+        .alarm-time {
+            font-size: 16px;
+            opacity: .9;
+            margin-bottom: 24px
+        }
+
+        .alarm-popup button {
+            background: #fff;
+            color: #6366f1;
+            border: none;
+            padding: 12px 32px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer
+        }
+
+        @keyframes shake {
+
+            0%,
+            100% {
+                transform: rotate(0)
+            }
+
+            25% {
+                transform: rotate(-15deg)
+            }
+
+            75% {
+                transform: rotate(15deg)
+            }
+        }
+
+        @keyframes popIn {
+            from {
+                transform: scale(.8);
+                opacity: 0
+            }
+
+            to {
+                transform: scale(1);
+                opacity: 1
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0
+            }
+
+            to {
+                opacity: 1
+            }
+        }
+
+        .phone {
+            width: 375px;
+            height: 812px;
+            max-height: 100vh;
+            background: var(--bg);
+            border-radius: 44px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            position: relative
+        }
+
+        .notch {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 120px;
+            height: 28px;
+            background: #000;
+            border-radius: 0 0 18px 18px;
+            z-index: 10
+        }
+
+        .app {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            padding-top: 36px;
+            color: var(--text)
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 16px
+        }
+
+        .view-btns,
+        .header-btns {
+            display: flex;
+            gap: 6px
+        }
+
+        .vbtn,
+        .ibtn {
+            height: 32px;
+            padding: 0 10px;
+            border-radius: 8px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            color: var(--text2);
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-weight: 600
+        }
+
+        .vbtn.active,
+        .ibtn:hover {
+            background: var(--accent);
+            color: #fff;
+            border-color: var(--accent)
+        }
+
+        .pie-icon {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: conic-gradient(#FF6B6B 0deg 120deg, #48DBFB 120deg 220deg, #1DD1A1 220deg 360deg);
+            border: 2px solid var(--text2)
+        }
+
+        .vbtn.active .pie-icon {
+            border-color: #fff
+        }
+
+        .date-bar {
+            padding: 4px 16px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text2)
+        }
+
+        .week-bar {
+            display: flex;
+            padding: 6px 16px;
+            gap: 4px
+        }
+
+        .wday {
+            flex: 1;
+            text-align: center;
+            padding: 6px 2px;
+            border-radius: 10px;
+            cursor: pointer;
+            background: var(--card);
+            border: 2px solid transparent
+        }
+
+        .wday:hover {
+            border-color: var(--accent)
+        }
+
+        .wday.sel {
+            background: var(--accent);
+            color: #fff
+        }
+
+        .wday .dn {
+            font-size: 9px;
+            color: var(--text3);
+            margin-bottom: 2px
+        }
+
+        .wday.sel .dn {
+            color: rgba(255, 255, 255, .8)
+        }
+
+        .wday .dd {
+            font-size: 13px;
+            font-weight: 700
+        }
+
+        .wheel-sec {
+            flex: 1;
+            padding: 8px 16px;
+            display: flex;
+            flex-direction: column
+        }
+
+        .wheel-sec.hide {
+            display: none
+        }
+
+        .wcard {
+            background: var(--card);
+            border-radius: 20px;
+            padding: 12px;
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center
+        }
+
+        .wcont {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            max-width: 320px;
+            max-height: 320px
+        }
+
+        #canvas {
+            width: 100%;
+            height: 100%;
+            cursor: crosshair
+        }
+
+        .dhint {
+            position: absolute;
+            background: var(--accent);
+            color: #fff;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            pointer-events: none;
+            z-index: 10;
+            display: none
+        }
+
+        .cal-sec {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0 16px 16px
+        }
+
+        .cal-sec.hide {
+            display: none
+        }
+
+        .cal-header {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 12px 0;
+            gap: 8px
+        }
+
+        .cal-nav button {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--card);
+            border: 1px solid var(--border);
+            color: var(--text);
+            font-size: 16px;
+            cursor: pointer
+        }
+
+        .cal-title {
+            font-size: 16px;
+            font-weight: 700
+        }
+
+        .cal-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px
+        }
+
+        .cal-day {
+            text-align: center;
+            padding: 10px 4px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 13px
+        }
+
+        .cal-day.header {
+            font-size: 11px;
+            color: var(--text3);
+            cursor: default
+        }
+
+        .cal-day:not(.header):hover {
+            background: var(--input)
+        }
+
+        .cal-day.today {
+            border: 2px solid var(--accent)
+        }
+
+        .cal-day.sel {
+            background: var(--accent);
+            color: #fff
+        }
+
+        .cal-day.other {
+            color: var(--text3)
+        }
+
+        .sched-sec {
+            padding: 0 16px 16px;
+            max-height: 200px;
+            overflow-y: auto
+        }
+
+        .sched-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0
+        }
+
+        .sched-title {
+            font-size: 13px;
+            font-weight: 700
+        }
+
+        .sched-count {
+            font-size: 11px;
+            color: var(--text3);
+            margin-left: 6px
+        }
+
+        .add-btn {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: var(--accent);
+            border: none;
+            color: #fff;
+            font-size: 16px;
+            cursor: pointer
+        }
+
+        .sitem {
+            background: var(--card);
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 8px;
+            border-left: 4px solid;
+            cursor: pointer
+        }
+
+        .sitem.sel {
+            outline: 2px solid var(--accent)
+        }
+
+        .stime {
+            font-size: 10px;
+            color: var(--text3);
+            margin-bottom: 3px;
+            display: flex;
+            align-items: center;
+            gap: 6px
+        }
+
+        .alarm-badge {
+            background: rgba(99, 102, 241, .15);
+            color: var(--accent);
+            padding: 2px 5px;
+            border-radius: 4px;
+            font-size: 9px
+        }
+
+        .sname {
+            font-size: 14px;
+            font-weight: 700
+        }
+
+        .sdesc {
+            font-size: 11px;
+            color: var(--text2)
+        }
+
+        .sactions {
+            display: flex;
+            gap: 6px;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid var(--border)
+        }
+
+        .sactions button {
+            flex: 1;
+            padding: 6px;
+            border-radius: 6px;
+            border: none;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer
+        }
+
+        .edit-btn {
+            background: rgba(99, 102, 241, .15);
+            color: var(--accent)
+        }
+
+        .del-btn {
+            background: rgba(239, 68, 68, .15);
+            color: #ef4444
+        }
+
+        .subtasks {
+            margin-top: 6px;
+            padding-top: 6px;
+            border-top: 1px solid var(--border)
+        }
+
+        .subtask {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 3px 0;
+            font-size: 12px
+        }
+
+        .subtask input {
+            width: 16px;
+            height: 16px;
+            accent-color: var(--accent);
+            cursor: pointer
+        }
+
+        .subtask.done span {
+            text-decoration: line-through;
+            color: var(--text3)
+        }
+
+        .modal-bg {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, .6);
+            z-index: 100;
+            align-items: flex-end;
+            justify-content: center
+        }
+
+        .modal-bg.show {
+            display: flex
+        }
+
+        .modal {
+            width: 375px;
+            max-height: 90vh;
+            background: var(--card);
+            border-radius: 24px 24px 0 0;
+            overflow: hidden;
+            animation: slideUp .3s;
+            color: var(--text)
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(100%)
+            }
+
+            to {
+                transform: translateY(0)
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--border)
+        }
+
+        .modal-header h2 {
+            font-size: 16px;
+            font-weight: 700
+        }
+
+        .modal-close {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: var(--input);
+            border: none;
+            color: var(--text2);
+            font-size: 18px;
+            cursor: pointer
+        }
+
+        .modal-body {
+            padding: 16px;
+            max-height: 60vh;
+            overflow-y: auto
+        }
+
+        .fg {
+            margin-bottom: 14px
+        }
+
+        .fg label {
+            display: block;
+            font-size: 12px;
+            color: var(--text2);
+            margin-bottom: 5px;
+            font-weight: 600
+        }
+
+        .fg input,
+        .fg select {
+            width: 100%;
+            padding: 10px 12px;
+            background: var(--input);
+            border: 2px solid transparent;
+            border-radius: 10px;
+            color: var(--text);
+            font-size: 13px;
+            font-family: inherit
+        }
+
+        .time-row {
+            display: flex;
+            align-items: center;
+            gap: 6px
+        }
+
+        .time-row select {
+            flex: 1;
+            padding: 8px;
+            background: var(--input);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text);
+            font-size: 13px
+        }
+
+        .time-row span {
+            color: var(--text3);
+            font-weight: 600
+        }
+
+        .colors {
+            display: flex;
+            gap: 6px;
+            justify-content: center;
+            flex-wrap: wrap
+        }
+
+        .copt {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 3px solid transparent;
+            cursor: pointer
+        }
+
+        .copt.sel {
+            border-color: var(--text);
+            transform: scale(1.15)
+        }
+
+        .stask-input {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 6px
+        }
+
+        .stask-input input {
+            flex: 1;
+            padding: 8px 10px
+        }
+
+        .stask-input button {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            background: rgba(239, 68, 68, .15);
+            color: #ef4444
+        }
+
+        .add-stask-btn {
+            width: 100%;
+            padding: 8px;
+            background: var(--input);
+            border: 2px dashed var(--border);
+            border-radius: 8px;
+            color: var(--text3);
+            font-size: 12px;
+            cursor: pointer
+        }
+
+        .opt-row {
+            display: flex;
+            gap: 6px
+        }
+
+        .opt-btn {
+            flex: 1;
+            padding: 10px;
+            border-radius: 8px;
+            background: var(--input);
+            border: 2px solid transparent;
+            color: var(--text);
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            text-align: center
+        }
+
+        .opt-btn.sel {
+            background: var(--accent);
+            color: #fff
+        }
+
+        .alarm-opts {
+            margin-top: 8px;
+            padding: 10px;
+            background: var(--input);
+            border-radius: 10px
+        }
+
+        .alarm-opts.hide {
+            display: none
+        }
+
+        .sound-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 6px
+        }
+
+        .sound-row select {
+            flex: 1
+        }
+
+        .sound-row button {
+            padding: 6px 10px;
+            border-radius: 6px;
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            font-size: 11px;
+            cursor: pointer
+        }
+
+        .vol-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 6px 0
+        }
+
+        .vol-row input {
+            flex: 1
+        }
+
+        .vol-val {
+            font-size: 11px;
+            color: var(--text2)
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 8px;
+            padding: 14px 18px;
+            border-top: 1px solid var(--border)
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            border: none
+        }
+
+        .btn-cancel {
+            background: var(--input);
+            color: var(--text2)
+        }
+
+        .btn-save {
+            background: var(--accent);
+            color: #fff
+        }
+
+        .home-ind {
+            width: 134px;
+            height: 5px;
+            background: var(--text3);
+            opacity: .3;
+            border-radius: 3px;
+            margin: 6px auto 10px
+        }
+
+        .tpl-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px;
+            background: var(--input);
+            border-radius: 12px;
+            margin-bottom: 8px;
+            cursor: pointer
+        }
+
+        .tpl-item:hover {
+            background: var(--accent);
+            color: #fff
+        }
+
+        .tpl-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--card);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px
+        }
+
+        .tpl-info {
+            flex: 1
+        }
+
+        .tpl-name {
+            font-size: 13px;
+            font-weight: 700
+        }
+
+        .tpl-desc {
+            font-size: 10px;
+            color: var(--text3)
+        }
+
+        .tpl-actions {
+            display: flex;
+            gap: 4px
+        }
+
+        .tpl-actions button {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer
+        }
+
+        .repeat-days {
+            display: flex;
+            gap: 5px;
+            margin-top: 8px
+        }
+
+        .rday {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--input);
+            border: 2px solid transparent;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer
+        }
+
+        .rday.sel {
+            background: var(--accent);
+            color: #fff
+        }
+
+        .tpl-wheel {
+            margin: 12px 0;
+            padding: 12px;
+            background: var(--input);
+            border-radius: 12px
+        }
+
+        .tpl-wheel-canvas {
+            width: 100%;
+            max-width: 200px;
+            height: 200px;
+            margin: 0 auto;
+            display: block;
+            cursor: crosshair
+        }
+
+        .tpl-block {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            background: var(--card);
+            border-radius: 8px;
+            margin-bottom: 6px;
+            border-left: 3px solid
+        }
+
+        .tpl-block-info {
+            flex: 1
+        }
+
+        .tpl-block-title {
+            font-size: 12px;
+            font-weight: 600
+        }
+
+        .tpl-block-time {
+            font-size: 10px;
+            color: var(--text3)
+        }
+    </style>
+</head>
+
+<body>
+    <div class="phone dark" id="phone">
+        <div class="notch"></div>
+        <div class="app">
+            <header class="header">
+                <div class="view-btns"><button class="vbtn active" id="vWheel" onclick="setView('wheel')">
+                        <div class="pie-icon"></div> 시간표
+                    </button><button class="vbtn" id="vCal" onclick="setView('cal')">📅 달력</button></div>
+                <div class="header-btns"><button class="ibtn" onclick="openTpl()">📂</button><button class="ibtn"
+                        onclick="openSet()">⚙️</button></div>
+            </header>
+            <div class="date-bar-row"
+                style="display:flex;align-items:center;justify-content:space-between;padding:0 16px">
+                <div class="date-bar" id="dateBar" style="flex:1"></div>
+                <button class="opt-btn" onclick="goToday()"
+                    style="font-size:11px;padding:4px 8px;margin-left:8px">오늘</button>
+            </div>
+            <div class="week-bar" id="weekBar"></div>
+            <div class="wheel-sec" id="wheelSec">
+                <div class="wcard" style="position:relative">
+                    <div class="wcont"><canvas id="canvas"></canvas>
+                        <div class="dhint" id="dhint"></div>
+                    </div>
+                    <button class="ibtn" onclick="showTplPicker()"
+                        style="position:absolute;bottom:8px;left:8px;font-size:18px">📂</button>
+                </div>
+            </div>
+            <div class="cal-sec hide" id="calSec">
+                <div class="cal-header"><button onclick="calPrev()">◀</button><span class="cal-title"
+                        id="calTitle"></span><button onclick="calNext()">▶</button></div>
+                <div class="cal-grid" id="calGrid"></div>
+            </div>
+            <div class="sched-sec" id="schedSec">
+                <div class="sched-header">
+                    <div><span class="sched-title" id="dateLabel"></span><span class="sched-count"
+                            id="schedCount"></span></div><button class="add-btn" onclick="openModal()">+</button>
+                </div>
+                <div id="schedList"></div>
+            </div>
+            <div class="home-ind"></div>
+        </div>
+    </div>
+    <div class="modal-bg" id="modal" onclick="if(event.target===this)closeModal()">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 id="modalTitle">새 일정</h2><button class="modal-close" onclick="closeModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="fg"><label>제목</label><input type="text" id="iTitle" placeholder="일정 이름"></div>
+                <div class="fg"><label>설명</label><input type="text" id="iDesc" placeholder="선택사항"></div>
+                <div class="fg"><label>📝 하위 할일</label>
+                    <div id="staskList"></div><button class="add-stask-btn" onclick="addStask()">+ 추가</button>
+                </div>
+                <div class="fg"><label>⏰ 시간</label>
+                    <div class="time-row"><select id="sH"></select><span>:</span><select
+                            id="sM"></select><span>~</span><select id="eH"></select><span>:</span><select
+                            id="eM"></select></div>
+                </div>
+                <div class="fg"><label>색상</label>
+                    <div class="colors" id="colorPicker"></div>
+                </div>
+                <div class="fg"><label>🔔 알람</label>
+                    <div class="opt-row" style="margin-bottom:8px"><button class="opt-btn" id="alarmOff"
+                            onclick="setAlarm(false)">끄기</button><button class="opt-btn" id="alarmOn"
+                            onclick="setAlarm(true)">켜기</button></div>
+                    <div class="alarm-opts hide" id="alarmOpts">
+                        <div class="fg" style="margin-bottom:8px"><label>알림 방식</label>
+                            <div class="opt-row">
+                                <button class="opt-btn sel" id="alarmSound" onclick="setAlarmType('sound')">🔊
+                                    소리</button>
+                                <button class="opt-btn" id="alarmVib" onclick="setAlarmType('vib')">📳 진동</button>
+                            </div>
+                        </div>
+                        <div id="soundOpts">
+                            <div class="fg" style="margin-bottom:6px"><label>소리 선택</label>
+                                <div class="sound-row"><select id="alarmSoundSel">
+                                        <option value="m1">🎵 상쾌한 아침</option>
+                                        <option value="m2">🌸 봄바람</option>
+                                        <option value="m3">✨ 맑은 하루</option>
+                                        <option value="m4">🌊 잔잔한 파도</option>
+                                    </select><button onclick="playSound()">▶ 듣기</button></div>
+                            </div>
+                            <div class="fg" style="margin-bottom:6px"><label>볼륨</label>
+                                <div class="vol-row"><input type="range" id="alarmVol" min="0" max="100" value="70"
+                                        oninput="updVol()"><span class="vol-val" id="volVal">70%</span></div>
+                            </div>
+                        </div>
+                        <div class="fg" style="margin-bottom:0"><label>반복</label><select id="alarmRep">
+                                <option value="once">1회</option>
+                                <option value="repeat">반복</option>
+                            </select></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer"><button class="btn btn-cancel" onclick="closeModal()">취소</button><button
+                    class="btn btn-save" onclick="saveBlock()">저장</button></div>
+        </div>
+    </div>
+    <div class="modal-bg" id="tplModal" onclick="if(event.target===this)closeTpl()">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>📂 나의 계획표</h2><button class="modal-close" onclick="closeTpl()">×</button>
+            </div>
+            <div class="modal-body">
+                <div id="tplList"></div><button class="add-stask-btn" style="margin-top:8px" onclick="openNewTpl()">+ 새
+                    계획표</button>
+            </div>
+        </div>
+    </div>
+    <div class="modal-bg" id="newTplModal" onclick="if(event.target===this)closeNewTpl()">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 id="tplModalTitle">새 계획표</h2><button class="modal-close" onclick="closeNewTpl()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="fg"><label>이름</label><input type="text" id="tplName" placeholder="계획표 이름"></div>
+                <div class="fg"><label>설명</label><input type="text" id="tplDesc" placeholder="예: 평일"></div>
+                <div class="fg"><label>반복 요일</label>
+                    <div class="repeat-days" id="repDays"></div>
+                </div>
+                <div class="tpl-wheel"><canvas id="tplCanvas" class="tpl-wheel-canvas"></canvas></div>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin:8px 0"><label
+                        style="font-size:12px;color:var(--text2);font-weight:600">📋 일정</label><button
+                        class="add-stask-btn" style="width:auto;padding:6px 10px" onclick="addTplBlock()">+ 추가</button>
+                </div>
+                <div id="tplBlockList"></div>
+            </div>
+            <div class="modal-footer"><button class="btn btn-cancel" onclick="closeNewTpl()">취소</button><button
+                    class="btn btn-save" onclick="saveNewTpl()">저장</button></div>
+        </div>
+    </div>
+    <div class="modal-bg" id="tplBlockModal" onclick="if(event.target===this)closeTplBlock()">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>일정 추가</h2><button class="modal-close" onclick="closeTplBlock()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="fg"><label>제목</label><input type="text" id="tbTitle" placeholder="일정 이름"></div>
+                <div class="fg"><label>⏰ 시간</label>
+                    <div class="time-row"><select id="tbSH"></select><span>:</span><select
+                            id="tbSM"></select><span>~</span><select id="tbEH"></select><span>:</span><select
+                            id="tbEM"></select></div>
+                </div>
+                <div class="fg"><label>색상</label>
+                    <div class="colors" id="tbColorPicker"></div>
+                </div>
+                <div class="fg"><label>📝 하위 할일</label>
+                    <div id="tbStaskList"></div><button class="add-stask-btn" onclick="addTbStask()">+ 추가</button>
+                </div>
+            </div>
+            <div class="modal-footer"><button class="btn btn-cancel" onclick="closeTplBlock()">취소</button><button
+                    class="btn btn-save" onclick="saveTplBlock()">추가</button></div>
+        </div>
+    </div>
+    <div class="modal-bg" id="setModal" onclick="if(event.target===this)cancelSet()">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>⚙️ 설정</h2><button class="modal-close" onclick="cancelSet()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="fg"><label>테마</label>
+                    <div class="opt-row"><button class="opt-btn" id="themeLight" onclick="tmpSetTheme('light')">☀️
+                            라이트</button><button class="opt-btn sel" id="themeDark" onclick="tmpSetTheme('dark')">🌙
+                            다크</button></div>
+                </div>
+                <div class="fg"><label>시간 형식</label>
+                    <div class="opt-row"><button class="opt-btn sel" id="time24"
+                            onclick="tmpSetTimeFormat(false)">24시간</button><button class="opt-btn" id="time12"
+                            onclick="tmpSetTimeFormat(true)">12시간</button></div>
+                </div>
+                <div class="fg"><label>글자 크기</label>
+                    <div class="opt-row"><button class="opt-btn" id="fontS" onclick="tmpSetFont(0.7)">작게</button><button
+                            class="opt-btn sel" id="fontM" onclick="tmpSetFont(1)">보통</button><button class="opt-btn"
+                            id="fontL" onclick="tmpSetFont(1.3)">크게</button></div>
+                </div>
+                <div style="margin:16px 0 8px;font-weight:600;font-size:13px;color:var(--text2)">🔔 알림 설정</div>
+                <div class="fg"><label>📱 휴대폰 알림</label>
+                    <div class="opt-row"><button class="opt-btn" id="notifOff"
+                            onclick="tmpSetNotif(false)">끄기</button><button class="opt-btn sel" id="notifOn"
+                            onclick="tmpSetNotif(true)">켜기</button></div>
+                </div>
+                <div class="fg"><label>📲 위젯</label>
+                    <div class="opt-row"><button class="opt-btn" id="widgetOff"
+                            onclick="tmpSetWidget(false)">끄기</button><button class="opt-btn sel" id="widgetOn"
+                            onclick="tmpSetWidget(true)">켜기</button></div>
+                </div>
+                <div class="fg"><label>⌚ Apple Watch</label>
+                    <div class="opt-row"><button class="opt-btn" id="watchOff"
+                            onclick="tmpSetWatch(false)">끄기</button><button class="opt-btn sel" id="watchOn"
+                            onclick="tmpSetWatch(true)">켜기</button></div>
+                </div>
+            </div>
+            <div class="modal-footer" style="display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--border)">
+                <button class="opt-btn" onclick="cancelSet()" style="flex:1">취소</button>
+                <button class="opt-btn sel" onclick="saveSet()" style="flex:1;background:#6366f1;color:#fff">저장</button>
+            </div>
+        </div>
+    </div>
+    <div class="modal-bg" id="tplPickerModal" onclick="if(event.target===this)closeTplPicker()">
+        <div class="modal" style="max-width:280px">
+            <div class="modal-header">
+                <h2>📂 템플릿 불러오기</h2><button class="modal-close" onclick="closeTplPicker()">×</button>
+            </div>
+            <div class="modal-body" id="tplPickerList" style="max-height:300px;overflow-y:auto"></div>
+        </div>
+    </div>
+    <script>
+        const C = ['#FF6B6B', '#FF9F43', '#FECA57', '#48DBFB', '#1DD1A1', '#5F27CD', '#A29BFE'], D = ['일', '월', '화', '수', '목', '금', '토'], DK = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+        let cur = new Date(), cal = new Date(), scheds = {}, tpls = {}, sets = { dark: 1, use12h: 0, fontSize: 1, notif: 1, widget: 1, watch: 1 };
+        let tmpSets = null; // Temporary settings for modal
+        let selId = null, editId = null, selColor = 0, stasks = [], alarmOn = 0, alarmType = 'sound', isDrag = 0, dragS = null, dragE = null, resizeId = null, resizeEdge = null;
+        let repDays = [], tplBlocks = [], tbColor = 0, tbStasks = [], editTplKey = null, tplDrag = 0, tplDragS = null, tplDragE = null, tplResizeId = null, tplResizeEdge = null, tplSelId = null;
+        const M = { m1: [[523, 659, 784, 880], [.15, .15, .15, .3]], m2: [[392, 440, 494, 523, 587], [.12, .12, .12, .12, .4]], m3: [[659, 784, 880, 1047], [.1, .1, .1, .5]], m4: [[349, 392, 440, 494, 523], [.2, .2, .2, .2, .4]] };
+        let alarmFiredToday = new Set(); // Track which alarms already fired today
+        function init() { load(); initSel(); applyTheme(); renderWeek(); renderCal(); renderSched(); resizeCanvas(); draw(); initDrag(); startAlarmChecker(); requestNotificationPermission(); window.onresize = resizeCanvas }
+        function requestNotificationPermission() { if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission(); }
+        function startAlarmChecker() {
+            const check = () => {
+                const now = new Date();
+                const todayKey = gk(now);
+                if (gk(cur) !== todayKey) return; // Only check today's blocks
+                const nowH = now.getHours() + now.getMinutes() / 60;
+                const blocks = gBlocks();
+                blocks.forEach(b => {
+                    if (!b.alarm) return;
+                    const alarmKey = `${todayKey}-${b.id}`;
+                    if (alarmFiredToday.has(alarmKey)) return;
+                    // Trigger when current time >= block start (exact or just passed)
+                    if (nowH >= b.start && nowH < b.start + 0.5 / 60) {
+                        alarmFiredToday.add(alarmKey);
+                        triggerAlarm(b);
+                    }
+                });
+            };
+            check();
+            setInterval(check, 10000); // Check every 10 seconds for better accuracy
+            // Reset fired alarms at midnight
+            setInterval(() => { const h = new Date().getHours(); if (h === 0) alarmFiredToday.clear(); }, 60000);
+        }
+        function triggerAlarm(block) {
+            // Show in-app popup
+            showAlarmPopup(block);
+            // Sound or Vibration based on alarmType
+            if (block.alarmType === 'sound' && block.sound && block.volume > 0) {
+                const vol = (block.volume || 50) / 100;
+                const m = M[block.sound] || M.m1;
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                let t = ctx.currentTime;
+                const notes = block.alarmRep === 'repeat' ? [...m[0], ...m[0]] : m[0];
+                const durs = block.alarmRep === 'repeat' ? [...m[1], ...m[1]] : m[1];
+                notes.forEach((f, i) => {
+                    const osc = ctx.createOscillator(), gain = ctx.createGain();
+                    osc.connect(gain); gain.connect(ctx.destination);
+                    osc.frequency.value = f; osc.type = 'sine';
+                    gain.gain.setValueAtTime(vol * .3, t);
+                    gain.gain.exponentialRampToValueAtTime(.01, t + durs[i]);
+                    osc.start(t); osc.stop(t + durs[i]); t += durs[i];
+                });
+                setTimeout(() => ctx.close(), t * 1000 + 200);
+            } else if (block.alarmType === 'vib' && 'vibrate' in navigator) {
+                navigator.vibrate([200, 100, 200, 100, 200, 100, 200]);
+            }
+            // Browser notification - only if notif setting is enabled
+            if (sets.notif && 'Notification' in window && Notification.permission === 'granted') {
+                new Notification('📅 ' + block.title, {
+                    body: `${fT(block.start)} - ${fT(block.end)}`,
+                    icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="%236366f1"/></svg>',
+                    tag: 'alarm-' + block.id,
+                    requireInteraction: true
+                });
+            }
+        }
+        function showAlarmPopup(block) {
+            const popup = document.createElement('div');
+            popup.className = 'alarm-popup';
+            popup.innerHTML = `<div class="alarm-popup-inner"><div class="alarm-icon">🔔</div><div class="alarm-title">${block.title}</div><div class="alarm-time">${fT(block.start)} - ${fT(block.end)}</div><button onclick="this.parentElement.parentElement.remove()">확인</button></div>`;
+            document.body.appendChild(popup);
+            setTimeout(() => popup.remove(), 15000);
+        }
+        function load() { const s = localStorage.getItem('dr'); if (s) { const d = JSON.parse(s); scheds = d.s || {}; tpls = d.t || {}; sets = d.e || { dark: 1, use12h: 0, fontSize: 1 }; if (sets.fontSize === 0.85) { sets.fontSize = 0.7; save(); } else if (sets.fontSize === 1.15) { sets.fontSize = 1.3; save(); } } else { tpls = { d: { name: 'Daily', desc: '평일', repeat: ['mon', 'tue', 'wed', 'thu', 'fri'], blocks: [{ id: 1, title: '수면', start: 0, end: 6, color: 5 }, { id: 2, title: '출근준비', start: 6, end: 8, color: 3, alarm: 1 }, { id: 3, title: '업무', start: 9, end: 18, color: 0, subtasks: [{ text: '이메일', done: 0 }] }, { id: 4, title: '저녁', start: 18.5, end: 19.5, color: 1 }, { id: 5, title: '학습', start: 20, end: 22, color: 4 }] } } } }
+        function save() { localStorage.setItem('dr', JSON.stringify({ s: scheds, t: tpls, e: sets })) }
+        function gk(d) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` }
+        function gBlocks() { const k = gk(cur); if (scheds[k]) return scheds[k]; const dn = DK[cur.getDay()]; for (const t of Object.values(tpls)) if (t.repeat && t.repeat.includes(dn)) return JSON.parse(JSON.stringify(t.blocks)); return [] }
+        function sBlocks(b) { scheds[gk(cur)] = b; save() }
+        function initSel() { ['sH', 'eH', 'tbSH', 'tbEH'].forEach(id => { const s = document.getElementById(id); if (s) { s.innerHTML = ''; for (let i = 0; i < 24; i++)s.innerHTML += `<option value="${i}">${fH(i)}</option>` } });['sM', 'eM', 'tbSM', 'tbEM'].forEach(id => { const s = document.getElementById(id); if (s) { s.innerHTML = ''; for (let i = 0; i < 60; i++)s.innerHTML += `<option value="${i}">${String(i).padStart(2, '0')}</option>` } }) }
+        function fH(h) { if (!sets.use12h) return String(h).padStart(2, '0'); if (h === 0 || h === 24) return '12'; if (h < 12) return String(h); if (h === 12) return '12'; return String(h - 12) }
+        function initCol(id, sel) { document.getElementById(id).innerHTML = C.map((c, i) => `<div class="copt ${i === sel ? 'sel' : ''}" onclick="${id === 'colorPicker' ? 'selCol' : 'selTbCol'}(${i})" style="background:${c}"></div>`).join('') }
+        function selCol(i) { selColor = i; initCol('colorPicker', i) }
+        function selTbCol(i) { tbColor = i; initCol('tbColorPicker', i) }
+        function updVol() { document.getElementById('volVal').textContent = document.getElementById('alarmVol').value + '%' }
+        function playSound() { const snd = document.getElementById('alarmSoundSel').value, rep = document.getElementById('alarmRep').value, vol = document.getElementById('alarmVol').value / 100, m = M[snd] || M.m1; const ctx = new (window.AudioContext || window.webkitAudioContext)(); let t = ctx.currentTime; const notes = rep === 'repeat' ? [...m[0], ...m[0]] : m[0], durs = rep === 'repeat' ? [...m[1], ...m[1]] : m[1]; notes.forEach((f, i) => { const osc = ctx.createOscillator(), gain = ctx.createGain(); osc.connect(gain); gain.connect(ctx.destination); osc.frequency.value = f; osc.type = 'sine'; gain.gain.setValueAtTime(vol * .2, t); gain.gain.exponentialRampToValueAtTime(.01, t + durs[i]); osc.start(t); osc.stop(t + durs[i]); t += durs[i] }); setTimeout(() => ctx.close(), t * 1000 + 100) }
+        function setAlarm(on) { alarmOn = on; document.getElementById('alarmOn').classList.toggle('sel', on); document.getElementById('alarmOff').classList.toggle('sel', !on); document.getElementById('alarmOpts').classList.toggle('hide', !on) }
+        function setAlarmType(type) { alarmType = type; document.getElementById('alarmSound').classList.toggle('sel', type === 'sound'); document.getElementById('alarmVib').classList.toggle('sel', type === 'vib'); document.getElementById('soundOpts').style.display = type === 'sound' ? 'block' : 'none'; }
+        function applyTheme() { document.getElementById('phone').classList.toggle('dark', sets.dark); initSel(); draw(); renderSched() }
+        function applyTmpTheme() { const s = tmpSets || sets; document.getElementById('themeDark').classList.toggle('sel', s.dark); document.getElementById('themeLight').classList.toggle('sel', !s.dark); document.getElementById('time24').classList.toggle('sel', !s.use12h); document.getElementById('time12').classList.toggle('sel', s.use12h); document.getElementById('fontS').classList.toggle('sel', s.fontSize === .7); document.getElementById('fontM').classList.toggle('sel', s.fontSize === 1); document.getElementById('fontL').classList.toggle('sel', s.fontSize === 1.3); document.getElementById('notifOn').classList.toggle('sel', s.notif); document.getElementById('notifOff').classList.toggle('sel', !s.notif); document.getElementById('widgetOn').classList.toggle('sel', s.widget); document.getElementById('widgetOff').classList.toggle('sel', !s.widget); document.getElementById('watchOn').classList.toggle('sel', s.watch); document.getElementById('watchOff').classList.toggle('sel', !s.watch); }
+        function tmpSetTheme(t) { tmpSets.dark = t === 'dark'; applyTmpTheme(); }
+        function tmpSetTimeFormat(u) { tmpSets.use12h = u; applyTmpTheme(); }
+        function tmpSetFont(s) { tmpSets.fontSize = s; applyTmpTheme(); }
+        function tmpSetNotif(on) { tmpSets.notif = on ? 1 : 0; applyTmpTheme(); }
+        function tmpSetWidget(on) { tmpSets.widget = on ? 1 : 0; applyTmpTheme(); }
+        function tmpSetWatch(on) { tmpSets.watch = on ? 1 : 0; applyTmpTheme(); }
+        function renderWeek() { const bar = document.getElementById('weekBar'), st = new Date(cur); st.setDate(cur.getDate() - cur.getDay()); bar.innerHTML = ''; for (let i = 0; i < 7; i++) { const d = new Date(st); d.setDate(st.getDate() + i); bar.innerHTML += `<div class="wday ${d.toDateString() === cur.toDateString() ? 'sel' : ''}" onclick="selDate(${d.getFullYear()},${d.getMonth()},${d.getDate()})"><div class="dn">${D[d.getDay()]}</div><div class="dd">${d.getDate()}</div></div>` } document.getElementById('dateBar').textContent = `${cur.getFullYear()}년 ${cur.getMonth() + 1}월 ${cur.getDate()}일 ${D[cur.getDay()]}요일`; document.getElementById('dateLabel').textContent = `${cur.getMonth() + 1}월 ${cur.getDate()}일 ${D[cur.getDay()]}` }
+        function selDate(y, m, d) { cur = new Date(y, m, d); selId = null; renderWeek(); renderSched(); draw() }
+        function renderCal() { cal = new Date(cur); document.getElementById('calTitle').textContent = `${cal.getFullYear()}년 ${cal.getMonth() + 1}월`; const g = document.getElementById('calGrid'), f = new Date(cal.getFullYear(), cal.getMonth(), 1), l = new Date(cal.getFullYear(), cal.getMonth() + 1, 0), sd = f.getDay(); g.innerHTML = D.map(d => `<div class="cal-day header">${d}</div>`).join(''); const pl = new Date(cal.getFullYear(), cal.getMonth(), 0).getDate(); for (let i = sd - 1; i >= 0; i--)g.innerHTML += `<div class="cal-day other" onclick="calSel(${cal.getFullYear()},${cal.getMonth() - 1},${pl - i})">${pl - i}</div>`; for (let d = 1; d <= l.getDate(); d++) { const it = new Date().toDateString() === new Date(cal.getFullYear(), cal.getMonth(), d).toDateString(); g.innerHTML += `<div class="cal-day ${it ? 'today' : ''} ${cur.toDateString() === new Date(cal.getFullYear(), cal.getMonth(), d).toDateString() ? 'sel' : ''}" onclick="calSel(${cal.getFullYear()},${cal.getMonth()},${d})">${d}</div>` } for (let d = 1; d <= 42 - g.children.length; d++)g.innerHTML += `<div class="cal-day other" onclick="calSel(${cal.getFullYear()},${cal.getMonth() + 1},${d})">${d}</div>` }
+        function calPrev() { cal.setMonth(cal.getMonth() - 1); renderCal() }
+        function calNext() { cal.setMonth(cal.getMonth() + 1); renderCal() }
+        function calSel(y, m, d) { cur = new Date(y, m, d); selId = null; renderWeek(); renderCal(); renderSched(); draw(); setView('wheel') }
+        function fT(h) { const hour = Math.floor(h), min = Math.round((h % 1) * 60); if (sets.use12h) { const h12 = hour === 0 ? 12 : (hour > 12 ? hour - 12 : (hour === 12 ? 12 : hour)); const ampm = hour < 12 ? '오전' : '오후'; return `${ampm} ${h12}:${String(min).padStart(2, '0')}`; } return `${String(hour).padStart(2, '0')}:${String(min).padStart(2, '0')}`; }
+        function renderSched() { let b = gBlocks().sort((a, b) => { const aSpans = a.start > a.end || (a.end === 24 && a.start > 12); const bSpans = b.start > b.end || (b.end === 24 && b.start > 12); if (aSpans && !bSpans) return -1; if (!aSpans && bSpans) return 1; return a.start - b.start; }); document.getElementById('schedCount').textContent = `일정 ${b.length}`; const l = document.getElementById('schedList'); if (!b.length) { l.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text3);font-size:12px">일정이 없습니다</div>'; return } if (selId) { b = b.filter(x => x.id === selId); } l.innerHTML = b.map(x => `<div class="sitem ${selId === x.id ? 'sel' : ''}" style="border-left-color:${C[x.color % 7]}" onclick="selBlock(${x.id})"><div class="stime">${fT(x.start)} - ${fT(x.end)}${x.alarm ? '<span class="alarm-badge">🔔</span>' : ''}</div><div class="sname">${x.title}</div>${x.subtasks && x.subtasks.length ? `<div class="subtasks">${x.subtasks.map((s, i) => `<div class="subtask ${s.done ? 'done' : ''}"><input type="checkbox" ${s.done ? 'checked' : ''} onclick="event.stopPropagation()" onchange="toggleSt(${x.id},${i})"><span>${s.text}</span></div>`).join('')}</div>` : ''}${selId === x.id ? `<div class="sactions"><button class="edit-btn" onclick="event.stopPropagation();openModal(${x.id})">✎ 편집</button><button class="del-btn" onclick="event.stopPropagation();delBlock(${x.id})">🗑 삭제</button></div>` : ''}</div>`).join('') }
+        function selBlock(id) { selId = selId === id ? null : id; renderSched(); draw() }
+        function delBlock(id) { sBlocks(gBlocks().filter(x => x.id !== id)); selId = null; renderSched(); draw() }
+        function toggleSt(bid, idx) { const b = gBlocks(), bl = b.find(x => x.id === bid); if (bl && bl.subtasks && bl.subtasks[idx]) { bl.subtasks[idx].done = !bl.subtasks[idx].done; sBlocks(b); renderSched() } }
+        function resizeCanvas() { const c = document.querySelector('.wcont'); if (!c) return; const sz = Math.min(c.clientWidth, c.clientHeight), cv = document.getElementById('canvas'), dpr = window.devicePixelRatio || 1; cv.width = sz * dpr; cv.height = sz * dpr; cv.style.width = sz + 'px'; cv.style.height = sz + 'px'; draw() }
+        function draw() {
+            const cv = document.getElementById('canvas'); if (!cv) return;
+            const ctx = cv.getContext('2d'), W = cv.width, H = cv.height, cx = W / 2, cy = H / 2, R = Math.min(W, H) * .40, dk = sets.dark, b = gBlocks(), fs = sets.fontSize;
+            ctx.clearRect(0, 0, W, H);
+            // Background circle
+            ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2);
+            ctx.fillStyle = dk ? '#1e1e3a' : '#f8f8fc'; ctx.fill();
+            ctx.strokeStyle = dk ? 'rgba(255,255,255,.15)' : 'rgba(0,0,0,.08)'; ctx.lineWidth = 2; ctx.stroke();
+            // Drag preview for new block
+            if (isDrag && dragS !== null && dragE !== null && !resizeId) {
+                const s = Math.min(dragS, dragE), e = Math.max(dragS, dragE);
+                const sa = (s / 24) * Math.PI * 2 - Math.PI / 2, ea = (e / 24) * Math.PI * 2 - Math.PI / 2;
+                ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, R - 2, sa, ea); ctx.closePath();
+                ctx.fillStyle = 'rgba(99,102,241,.35)'; ctx.fill();
+            }
+            // Draw blocks
+            b.forEach(x => {
+                let st = x.start, en = x.end;
+                if (resizeId === x.id && dragE !== null) {
+                    if (resizeEdge === 's') st = dragE;
+                    else en = dragE;
+                }
+                // Normalize values
+                while (st < 0) st += 24;
+                while (st >= 24) st -= 24;
+                while (en < 0) en += 24;
+                while (en > 24) en -= 24;
+                if (en === 0) en = 24; // Midnight end should be 24
+
+                const color = C[x.color % 7];
+
+                // Check if block spans midnight (start > end in circular terms)
+                if (st > en || (st > 0 && en === 24 && st > 12)) {
+                    // Midnight-spanning block: draw two arcs
+                    // Arc 1: from start to 24:00 (midnight)
+                    const sa1 = (st / 24) * Math.PI * 2 - Math.PI / 2;
+                    const ea1 = (24 / 24) * Math.PI * 2 - Math.PI / 2; // = 3π/2 = top
+                    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, R - 2, sa1, ea1); ctx.closePath();
+                    ctx.fillStyle = color; ctx.fill();
+
+                    // Arc 2: from 00:00 to end
+                    if (en > 0) {
+                        const sa2 = (0 / 24) * Math.PI * 2 - Math.PI / 2; // = -π/2 = top
+                        const ea2 = (en / 24) * Math.PI * 2 - Math.PI / 2;
+                        ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, R - 2, sa2, ea2); ctx.closePath();
+                        ctx.fillStyle = color; ctx.fill();
+                    }
+
+                    // Selection highlight - draw complete outline without center dividing line at 24:00
+                    if (x.id === selId) {
+                        ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
+                        // Draw as one continuous path: center -> start edge -> outer arc through midnight -> end edge -> center
+                        const ea2 = (en / 24) * Math.PI * 2 - Math.PI / 2;
+                        ctx.beginPath();
+                        ctx.moveTo(cx, cy); // center
+                        ctx.lineTo(cx + Math.cos(sa1) * (R - 2), cy + Math.sin(sa1) * (R - 2)); // to start edge
+                        ctx.arc(cx, cy, R - 2, sa1, ea1); // outer arc part 1 (start to midnight)
+                        ctx.arc(cx, cy, R - 2, -Math.PI / 2, ea2); // outer arc part 2 (midnight to end) - continuous!
+                        ctx.lineTo(cx, cy); // back to center
+                        ctx.stroke();
+                    }
+
+                    // Text - same as normal blocks
+                    const dur = (24 - st + en) * 60;
+                    if (dur >= 5) {
+                        const durHours = (24 - st + en);
+                        const centerHour = st + durHours / 2;
+                        const normalizedCenter = centerHour >= 24 ? centerHour - 24 : centerHour;
+                        const midAngle = (normalizedCenter / 24) * Math.PI * 2 - Math.PI / 2;
+                        const textR = R * 0.5;
+                        ctx.save();
+                        ctx.translate(cx + Math.cos(midAngle) * textR, cy + Math.sin(midAngle) * textR);
+                        let textRot = midAngle;
+                        if (midAngle > Math.PI / 2 || midAngle < -Math.PI / 2) textRot += Math.PI;
+                        ctx.rotate(textRot);
+                        const brightness = parseInt(color.slice(1, 3), 16) * .299 + parseInt(color.slice(3, 5), 16) * .587 + parseInt(color.slice(5, 7), 16) * .114;
+                        ctx.fillStyle = brightness > 180 ? '#1a1a2e' : '#fff';
+                        ctx.font = `600 ${Math.max(8, Math.min(12, R * .06 * fs))}px "Noto Sans KR"`;
+                        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                        ctx.fillText(x.title.slice(0, dur >= 15 ? 8 : 2), 0, 0);
+                        ctx.restore();
+                    }
+                } else {
+                    // Normal block (doesn't span midnight)
+                    if (en <= st) en = st + 1 / 60; // Minimum duration safety
+                    const sa = (st / 24) * Math.PI * 2 - Math.PI / 2;
+                    const ea = (en / 24) * Math.PI * 2 - Math.PI / 2;
+                    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, R - 2, sa, ea); ctx.closePath();
+                    ctx.fillStyle = color; ctx.fill();
+                    if (x.id === selId) { ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke(); }
+                    // Text
+                    const dur = (en - st) * 60;
+                    if (dur >= 5) {
+                        const midAngle = (sa + ea) / 2;
+                        const textR = R * 0.5;
+                        ctx.save();
+                        ctx.translate(cx + Math.cos(midAngle) * textR, cy + Math.sin(midAngle) * textR);
+                        let textRot = midAngle;
+                        if (midAngle > Math.PI / 2 || midAngle < -Math.PI / 2) textRot += Math.PI;
+                        ctx.rotate(textRot);
+                        const brightness = parseInt(color.slice(1, 3), 16) * .299 + parseInt(color.slice(3, 5), 16) * .587 + parseInt(color.slice(5, 7), 16) * .114;
+                        ctx.fillStyle = brightness > 180 ? '#1a1a2e' : '#fff';
+                        ctx.font = `600 ${Math.max(8, Math.min(12, R * .06 * fs))}px "Noto Sans KR"`;
+                        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                        ctx.fillText(x.title.slice(0, dur >= 15 ? 8 : 2), 0, 0);
+                        ctx.restore();
+                    }
+                }
+            });
+            // Hour tick marks and labels
+            for (let h = 0; h < 24; h++) {
+                const a = (h / 24) * Math.PI * 2 - Math.PI / 2;
+                ctx.beginPath();
+                ctx.moveTo(cx + Math.cos(a) * R, cy + Math.sin(a) * R);
+                ctx.lineTo(cx + Math.cos(a) * (R + (h % 6 === 0 ? 8 : 4)), cy + Math.sin(a) * (R + (h % 6 === 0 ? 8 : 4)));
+                ctx.strokeStyle = dk ? 'rgba(255,255,255,.35)' : 'rgba(0,0,0,.25)';
+                ctx.lineWidth = h % 6 === 0 ? 2 : 1; ctx.stroke();
+                if (h % 3 === 0) {
+                    ctx.fillStyle = dk ? '#bbb' : '#444';
+                    ctx.font = '600 10px "Noto Sans KR"'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                    ctx.fillText(fH(h === 0 ? 24 : h), cx + Math.cos(a) * (R + 20), cy + Math.sin(a) * (R + 20));
+                }
+            }
+            // Resize handles for selected block
+            if (selId) {
+                const sel = b.find(x => x.id === selId);
+                if (sel) {
+                    let currentStart = sel.start;
+                    let currentEnd = sel.end;
+                    if (resizeId === sel.id && dragE !== null) {
+                        if (resizeEdge === 's') currentStart = dragE;
+                        else currentEnd = dragE;
+                    }
+
+                    const startA = (currentStart / 24) * Math.PI * 2 - Math.PI / 2;
+                    const endA = (currentEnd / 24) * Math.PI * 2 - Math.PI / 2;
+
+                    // Circle handle
+                    const drawHandle = (angle) => {
+                        const handleR = R + 3;
+                        ctx.beginPath();
+                        ctx.arc(cx + Math.cos(angle) * handleR, cy + Math.sin(angle) * handleR, 5, 0, Math.PI * 2);
+                        ctx.fillStyle = '#6366f1';
+                        ctx.fill();
+                        ctx.strokeStyle = '#fff';
+                        ctx.lineWidth = 1.5;
+                        ctx.stroke();
+                    };
+
+                    drawHandle(startA);
+                    drawHandle(endA);
+                }
+            }
+            // Center dot
+            ctx.beginPath(); ctx.arc(cx, cy, 3, 0, Math.PI * 2);
+            ctx.fillStyle = dk ? '#888' : '#aaa'; ctx.fill();
+        }
+        function initDrag() {
+            const cv = document.getElementById('canvas'), hint = document.getElementById('dhint');
+            const MIN_UNIT = 1 / 60;
+            let lastAngle = null;
+            let accumH = null;
+            let resizeBlock = null; // Store block being resized
+
+            function getAngle(e) {
+                const r = cv.getBoundingClientRect();
+                const x = (e.clientX - r.left) / r.width * cv.width - cv.width / 2;
+                const y = (e.clientY - r.top) / r.height * cv.height - cv.height / 2;
+                let a = Math.atan2(y, x) + Math.PI / 2;
+                if (a < 0) a += Math.PI * 2;
+                return a;
+            }
+
+            function gH(e) {
+                let h = (getAngle(e) / (Math.PI * 2)) * 24;
+                h = Math.round(h * 60) / 60;
+                if (h >= 24) h = 0;
+                return h;
+            }
+
+            function getXY(e) {
+                const r = cv.getBoundingClientRect();
+                return {
+                    x: (e.clientX - r.left) / r.width * cv.width - cv.width / 2,
+                    y: (e.clientY - r.top) / r.height * cv.height - cv.height / 2
+                };
+            }
+
+            // Get max end time (limited by next block)
+            function getMaxEnd(block, blocks) {
+                let max = 24;
+                for (const b of blocks) {
+                    if (b.id === block.id) continue;
+                    if (b.start > block.start && b.start < max) max = b.start;
+                }
+                return max;
+            }
+
+            // Get min start time (limited by previous block)
+            function getMinStart(block, blocks) {
+                let min = 0;
+                for (const b of blocks) {
+                    if (b.id === block.id) continue;
+                    if (b.end <= block.start && b.end > min) min = b.end;
+                }
+                return min;
+            }
+
+            // Check if time range is available for new/resized block (handles midnight spanning)
+            function isTimeAvailable(start, end, excludeId = null) {
+                const blocks = gBlocks();
+                for (const b of blocks) {
+                    if (excludeId && b.id === excludeId) continue;
+                    // Check overlap considering midnight-spanning blocks
+                    if (hasOverlap(start, end, b.start, b.end)) return false;
+                }
+                return true;
+            }
+
+            // Check if two time ranges overlap (handles midnight-spanning)
+            function hasOverlap(s1, e1, s2, e2) {
+                // Normalize: if end < start, it spans midnight
+                const range1SpansMidnight = e1 < s1 || (e1 === 24 && s1 > 12);
+                const range2SpansMidnight = e2 < s2 || (e2 === 24 && s2 > 12);
+
+                // Convert to array of segments for comparison
+                function getSegments(s, e, spansMidnight) {
+                    if (spansMidnight) {
+                        return [[s, 24], [0, e === 24 ? 0 : e]];
+                    }
+                    return [[s, e]];
+                }
+
+                const segs1 = getSegments(s1, e1, range1SpansMidnight);
+                const segs2 = getSegments(s2, e2, range2SpansMidnight);
+
+                // Check if any segments overlap
+                for (const [a1, a2] of segs1) {
+                    for (const [b1, b2] of segs2) {
+                        if (!(a2 <= b1 || a1 >= b2)) return true;
+                    }
+                }
+                return false;
+            }
+
+            // Get the boundary limit for resizing (clamp to nearest block edge)
+            function getResizeBoundary(blockId, edge, currentVal) {
+                const blocks = gBlocks();
+                const block = blocks.find(b => b.id === blockId);
+                if (!block) return currentVal;
+
+                if (edge === 's') {
+                    // Start edge: find the nearest END of another block (or 0)
+                    let limit = 0;
+                    for (const b of blocks) {
+                        if (b.id === blockId) continue;
+                        // If another block ends before our current start, and ends after our limit
+                        if (b.end <= block.end && b.end > limit && b.end <= currentVal) {
+                            // Check if moving start to this position would overlap
+                            if (!hasOverlap(b.end, block.end, b.start, b.end)) {
+                                limit = b.end;
+                            }
+                        }
+                        // Also check if we're trying to go into another block
+                        if (currentVal < b.end && currentVal >= b.start && b.id !== blockId) {
+                            return b.end; // Clamp to the end of that block
+                        }
+                    }
+                    return Math.max(limit, currentVal);
+                } else {
+                    // End edge: find the nearest START of another block (or 24)
+                    let limit = 24;
+                    for (const b of blocks) {
+                        if (b.id === blockId) continue;
+                        // If another block starts after our current end
+                        if (b.start >= block.start && b.start < limit && b.start >= currentVal) {
+                            limit = b.start;
+                        }
+                        // Also check if we're trying to go into another block
+                        if (currentVal > b.start && currentVal <= b.end && b.id !== blockId) {
+                            return b.start; // Clamp to the start of that block
+                        }
+                    }
+                    return Math.min(limit, currentVal);
+                }
+            }
+
+            function clickedHandle(e) {
+                if (!selId) return null;
+                const sel = gBlocks().find(b => b.id === selId);
+                if (!sel) return null;
+                const R = Math.min(cv.width, cv.height) * 0.40;
+                const handleR = R + 2;
+                const { x, y } = getXY(e);
+                const dist = (bx, by) => Math.sqrt((x - bx) ** 2 + (y - by) ** 2);
+                const startA = (sel.start / 24) * Math.PI * 2 - Math.PI / 2;
+                if (dist(Math.cos(startA) * handleR, Math.sin(startA) * handleR) < 18) return { id: sel.id, e: 's', origVal: sel.start };
+                const endA = (sel.end / 24) * Math.PI * 2 - Math.PI / 2;
+                if (dist(Math.cos(endA) * handleR, Math.sin(endA) * handleR) < 18) return { id: sel.id, e: 'e', origVal: sel.end };
+                return null;
+            }
+
+            cv.onmousedown = function (e) {
+                lastAngle = getAngle(e);
+                const h = gH(e);
+                const handle = clickedHandle(e);
+                if (handle) {
+                    resizeBlock = gBlocks().find(b => b.id === handle.id);
+                    accumH = handle.origVal;
+                    resizeId = handle.id; resizeEdge = handle.e;
+                    isDrag = 1; dragS = h; dragE = accumH;
+                    return;
+                }
+                const bl = gBlocks().find(b => {
+                    // Midnight-spanning block (start > end)
+                    if (b.start > b.end) return h >= b.start || h < b.end;
+                    // Normal block
+                    return h >= b.start && h < b.end;
+                });
+                if (bl) { selBlock(bl.id); return; }
+                // Check if starting position overlaps existing block
+                if (!isTimeAvailable(h, h + MIN_UNIT)) return;
+                isDrag = 1; dragS = h; dragE = h; accumH = null; resizeBlock = null; hint.style.display = 'block';
+            };
+
+            cv.onmousemove = function (e) {
+                if (!isDrag) return;
+                const currAngle = getAngle(e);
+
+                if (resizeId && lastAngle !== null && resizeBlock) {
+                    let delta = currAngle - lastAngle;
+                    if (delta > Math.PI) delta -= Math.PI * 2;
+                    if (delta < -Math.PI) delta += Math.PI * 2;
+                    const deltaH = (delta / (Math.PI * 2)) * 24;
+                    accumH += deltaH;
+
+                    // Normalize to 0-24 range
+                    while (accumH < 0) accumH += 24;
+                    while (accumH >= 24) accumH -= 24;
+
+                    let clampedVal = Math.round(accumH * 60) / 60;
+
+                    // Check all other blocks for overlap/crossing
+                    const blocks = gBlocks();
+                    for (const other of blocks) {
+                        if (other.id === resizeId) continue;
+
+                        // Calculate what the resized block would look like
+                        const newStart = resizeEdge === 's' ? clampedVal : resizeBlock.start;
+                        const newEnd = resizeEdge === 's' ? resizeBlock.end : clampedVal;
+
+                        // Check if the resulting block would overlap with 'other'
+                        const wouldOverlap = (s1, e1, s2, e2) => {
+                            // Helper to check if a point is inside a range (circular)
+                            const inRange = (pt, s, e) => {
+                                if (s <= e) return pt > s && pt < e;
+                                return pt > s || pt < e; // midnight span
+                            };
+
+                            // Check various overlap conditions
+                            const s1InS2 = inRange(s1, s2, e2);
+                            const e1InS2 = inRange(e1 === 24 ? 0 : e1, s2, e2);
+                            const s2InS1 = inRange(s2, s1, e1);
+                            const e2InS1 = inRange(e2 === 24 ? 0 : e2, s1, e1);
+
+                            return s1InS2 || e1InS2 || s2InS1 || e2InS1;
+                        };
+
+                        // If would overlap, clamp to boundary
+                        if (wouldOverlap(newStart, newEnd, other.start, other.end)) {
+                            if (resizeEdge === 's') {
+                                // Moving start: clamp to other's end
+                                const spansMidnight = other.start > other.end || (other.end === 24 && other.start > 12);
+                                if (spansMidnight) {
+                                    // For midnight block, clamp to its end (morning side)
+                                    clampedVal = other.end === 24 ? 0 : other.end;
+                                } else {
+                                    clampedVal = other.end;
+                                }
+                            } else {
+                                // Moving end: clamp to other's start
+                                clampedVal = other.start;
+                            }
+                        }
+                    }
+
+                    // Enforce minimum duration from fixed edge (no > 23.5 check - allow long blocks)
+                    if (resizeEdge === 's') {
+                        const distToEnd = (resizeBlock.end - clampedVal + 24) % 24;
+                        if (distToEnd < MIN_UNIT) {
+                            clampedVal = resizeBlock.end - MIN_UNIT;
+                            if (clampedVal < 0) clampedVal += 24;
+                        }
+                    } else {
+                        const distFromStart = (clampedVal - resizeBlock.start + 24) % 24;
+                        if (distFromStart < MIN_UNIT) {
+                            clampedVal = resizeBlock.start + MIN_UNIT;
+                            if (clampedVal >= 24) clampedVal -= 24;
+                        }
+                    }
+
+                    dragE = clampedVal;
+                } else {
+                    dragE = gH(e);
+                }
+
+                lastAngle = currAngle;
+
+                if (resizeId) {
+                    draw();
+                    let displayH = dragE;
+                    if (displayH === 0 && resizeEdge === 'e') displayH = 24;
+                    hint.textContent = resizeEdge === 's' ? `시작: ${fT(dragE)}` : `종료: ${fT(displayH)}`;
+                    hint.style.display = 'block';
+                } else {
+                    const s = Math.min(dragS, dragE), en = Math.max(dragS, dragE);
+                    hint.textContent = `${fT(s)} ~ ${fT(en)}`;
+                    draw();
+                }
+                hint.style.left = (e.clientX - cv.getBoundingClientRect().left + 10) + 'px';
+                hint.style.top = (e.clientY - cv.getBoundingClientRect().top - 30) + 'px';
+            };
+
+            cv.onmouseup = function (e) {
+                if (!isDrag) return;
+                isDrag = 0; hint.style.display = 'none';
+                if (resizeId) {
+                    const bl = gBlocks(), b = bl.find(x => x.id === resizeId);
+                    if (b) {
+                        // dragE is already validated during drag, use directly
+                        if (resizeEdge === 's') {
+                            b.start = dragE;
+                        } else {
+                            b.end = dragE === 0 ? 24 : dragE;
+                        }
+                        sBlocks(bl); renderSched();
+                    }
+                    resizeId = null; resizeEdge = null; lastAngle = null; accumH = null; resizeBlock = null; draw(); return;
+                }
+                const s = Math.min(dragS, dragE), en = Math.max(dragS, dragE);
+                // Only open modal if time is available
+                if (en - s >= MIN_UNIT && isTimeAvailable(s, en)) openModal(null, s, en);
+                dragS = null; dragE = null; lastAngle = null; accumH = null; resizeBlock = null; draw();
+            };
+
+            cv.onmouseleave = function () {
+                if (isDrag) { isDrag = 0; hint.style.display = 'none'; hint.style.color = ''; resizeId = null; resizeEdge = null; lastAngle = null; accumH = null; resizeBlock = null; dragS = null; dragE = null; draw(); }
+            };
+        }
+        function setView(v) { document.getElementById('vWheel').classList.toggle('active', v === 'wheel'); document.getElementById('vCal').classList.toggle('active', v === 'cal'); document.getElementById('wheelSec').classList.toggle('hide', v !== 'wheel'); document.getElementById('calSec').classList.toggle('hide', v !== 'cal'); if (v === 'wheel') setTimeout(resizeCanvas, 10); if (v === 'cal') renderCal() }
+        function openModal(id = null, ds = null, de = null) { editId = id; stasks = []; if (id) { const b = gBlocks().find(x => x.id === id); document.getElementById('modalTitle').textContent = '일정 편집'; document.getElementById('iTitle').value = b.title; document.getElementById('iDesc').value = b.desc || ''; document.getElementById('sH').value = Math.floor(b.start); document.getElementById('sM').value = Math.round((b.start % 1) * 60); document.getElementById('eH').value = Math.floor(b.end); document.getElementById('eM').value = Math.round((b.end % 1) * 60); selColor = b.color; setAlarm(b.alarm || 0); setAlarmType(b.alarmType || 'sound'); if (b.sound) document.getElementById('alarmSoundSel').value = b.sound; if (b.volume !== undefined) { document.getElementById('alarmVol').value = b.volume; updVol(); } if (b.alarmRep) document.getElementById('alarmRep').value = b.alarmRep; stasks = b.subtasks ? [...b.subtasks] : [] } else { document.getElementById('modalTitle').textContent = '새 일정'; document.getElementById('iTitle').value = ''; document.getElementById('iDesc').value = ''; if (ds !== null) { document.getElementById('sH').value = Math.floor(ds); document.getElementById('sM').value = Math.round((ds % 1) * 60); document.getElementById('eH').value = Math.floor(de); document.getElementById('eM').value = Math.round((de % 1) * 60) } else { document.getElementById('sH').value = 9; document.getElementById('sM').value = 0; document.getElementById('eH').value = 10; document.getElementById('eM').value = 0 } selColor = 0; setAlarm(0); setAlarmType('sound'); stasks = [] } initCol('colorPicker', selColor); renderStasks(); document.getElementById('modal').classList.add('show') }
+        function closeModal() { document.getElementById('modal').classList.remove('show') }
+        function renderStasks() { document.getElementById('staskList').innerHTML = stasks.map((s, i) => `<div class="stask-input"><input type="text" value="${s.text || ''}" onchange="updStask(${i},this.value)" placeholder="할일"><button onclick="remStask(${i})">×</button></div>`).join('') }
+        function addStask() { stasks.push({ text: '', done: 0 }); renderStasks() }
+        function remStask(i) { stasks.splice(i, 1); renderStasks() }
+        function updStask(i, t) { stasks[i].text = t }
+        function saveBlock() { const title = document.getElementById('iTitle').value.trim(); if (!title) return alert('제목 입력'); const sh = +document.getElementById('sH').value, sm = +document.getElementById('sM').value, eh = +document.getElementById('eH').value, em = +document.getElementById('eM').value; let st = sh + sm / 60, en = eh + em / 60; if (en === 0) en = 24; const dur = (en >= st) ? (en - st) : (24 - st + en); if (dur < 1 / 60) return alert('최소 1분'); let bl = gBlocks(); document.querySelectorAll('#staskList input[type="text"]').forEach((inp, i) => { if (stasks[i]) stasks[i].text = inp.value }); const data = { title, desc: document.getElementById('iDesc').value.trim(), start: st, end: en, color: selColor, alarm: alarmOn, alarmType: alarmType, sound: document.getElementById('alarmSoundSel').value, volume: +document.getElementById('alarmVol').value, alarmRep: document.getElementById('alarmRep').value, subtasks: stasks.filter(s => s.text.trim()) }; if (editId) { const idx = bl.findIndex(b => b.id === editId); if (idx !== -1) bl[idx] = { ...bl[idx], ...data } } else bl.push({ id: Date.now(), ...data }); sBlocks(bl); closeModal(); selId = null; renderSched(); draw() }
+        function openTpl() { renderTplList(); document.getElementById('tplModal').classList.add('show') }
+        function closeTpl() { document.getElementById('tplModal').classList.remove('show') }
+        function renderTplList() { document.getElementById('tplList').innerHTML = Object.entries(tpls).map(([k, t]) => `<div class="tpl-item"><div class="tpl-icon">📅</div><div class="tpl-info"><div class="tpl-name">${t.name}</div><div class="tpl-desc">${t.desc}|${t.blocks.length}개${t.repeat && t.repeat.length ? ' (' + t.repeat.map(r => D[DK.indexOf(r)]).join(',') + ')' : ''}</div></div><div class="tpl-actions"><button class="edit-btn" onclick="event.stopPropagation();editTpl('${k}')">✎</button><button class="del-btn" onclick="event.stopPropagation();delTpl('${k}')">×</button></div></div>`).join('') || '<div style="text-align:center;color:var(--text3);padding:16px;font-size:12px">없음</div>' }
+        function applyTpl(k) { const t = tpls[k]; if (t) { const b = JSON.parse(JSON.stringify(t.blocks)); b.forEach(x => x.id = Date.now() + Math.random()); sBlocks(b); closeTpl(); renderSched(); draw() } }
+        function delTpl(k) { if (confirm('삭제?')) { delete tpls[k]; save(); renderTplList() } }
+        function editTpl(k) { editTplKey = k; tplSelId = null; const t = tpls[k]; document.getElementById('tplModalTitle').textContent = '계획표 편집'; document.getElementById('tplName').value = t.name; document.getElementById('tplDesc').value = t.desc; repDays = [...t.repeat]; tplBlocks = JSON.parse(JSON.stringify(t.blocks)); renderRepDays(); renderTplBlockList(); setTimeout(() => { drawTplCanvas(); initTplDrag() }, 100); document.getElementById('newTplModal').classList.add('show') }
+        function openNewTpl() { editTplKey = null; tplSelId = null; document.getElementById('tplModalTitle').textContent = '새 계획표'; document.getElementById('tplName').value = ''; document.getElementById('tplDesc').value = ''; repDays = []; tplBlocks = []; renderRepDays(); renderTplBlockList(); setTimeout(() => { drawTplCanvas(); initTplDrag() }, 100); document.getElementById('newTplModal').classList.add('show') }
+        function closeNewTpl() { document.getElementById('newTplModal').classList.remove('show') }
+        function renderRepDays() { document.getElementById('repDays').innerHTML = DK.map((d, i) => `<div class="rday ${repDays.includes(d) ? 'sel' : ''}" onclick="toggleRep('${d}',this)">${D[i]}</div>`).join('') }
+        function toggleRep(d, el) { if (repDays.includes(d)) { repDays = repDays.filter(x => x !== d); el.classList.remove('sel') } else { repDays.push(d); el.classList.add('sel') } }
+        function renderTplBlockList() { document.getElementById('tplBlockList').innerHTML = tplBlocks.length ? tplBlocks.map((b, i) => `<div class="tpl-block" style="border-left-color:${C[b.color % 7]}"><div class="tpl-block-info"><div class="tpl-block-title">${b.title}</div><div class="tpl-block-time">${fT(b.start)}-${fT(b.end)}${b.subtasks && b.subtasks.length ? ' (' + b.subtasks.length + '할일)' : ''}</div></div><button class="del-btn" style="width:24px;height:24px;font-size:10px" onclick="remTplBlock(${i})">×</button></div>`).join('') : '<div style="text-align:center;color:var(--text3);padding:12px;font-size:11px">드래그로 추가</div>'; drawTplCanvas() }
+        function remTplBlock(i) { tplBlocks.splice(i, 1); renderTplBlockList() }
+        function drawTplCanvas() {
+            const cv = document.getElementById('tplCanvas'); if (!cv) return;
+            const dpr = window.devicePixelRatio || 1; cv.width = 200 * dpr; cv.height = 200 * dpr;
+            const ctx = cv.getContext('2d'), W = cv.width, H = cv.height, cx = W / 2, cy = H / 2, R = Math.min(W, H) * .42, dk = sets.dark, fs = sets.fontSize || 1;
+            ctx.clearRect(0, 0, W, H);
+            // Background circle
+            ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.fillStyle = dk ? '#1e1e3a' : '#f8f8fc'; ctx.fill();
+            // Drag preview
+            if (tplDrag && tplDragS !== null && tplDragE !== null && !tplResizeId) {
+                const s = Math.min(tplDragS, tplDragE), e = Math.max(tplDragS, tplDragE);
+                const sa = (s / 24) * Math.PI * 2 - Math.PI / 2, ea = (e / 24) * Math.PI * 2 - Math.PI / 2;
+                ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, R - 2, sa, ea); ctx.closePath();
+                ctx.fillStyle = 'rgba(99,102,241,.4)'; ctx.fill();
+            }
+            // Draw blocks
+            tplBlocks.forEach(b => {
+                let st = b.start, en = b.end;
+                // Apply resize preview
+                if (tplResizeId === b.id && tplDragE !== null) {
+                    if (tplResizeEdge === 's') st = tplDragE;
+                    else en = tplDragE;
+                }
+                const color = C[b.color % 7];
+                // Midnight-spanning block
+                if (st > en || (st > 0 && en === 24 && st > 12)) {
+                    const sa1 = (st / 24) * Math.PI * 2 - Math.PI / 2;
+                    const ea1 = (24 / 24) * Math.PI * 2 - Math.PI / 2;
+                    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, R - 2, sa1, ea1); ctx.closePath();
+                    ctx.fillStyle = color; ctx.fill();
+                    if (en > 0) {
+                        const sa2 = -Math.PI / 2, ea2 = (en / 24) * Math.PI * 2 - Math.PI / 2;
+                        ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, R - 2, sa2, ea2); ctx.closePath();
+                        ctx.fillStyle = color; ctx.fill();
+                    }
+                    if (b.id === tplSelId) {
+                        ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
+                        const ea2 = (en / 24) * Math.PI * 2 - Math.PI / 2;
+                        ctx.beginPath(); ctx.moveTo(cx, cy);
+                        ctx.lineTo(cx + Math.cos(sa1) * (R - 2), cy + Math.sin(sa1) * (R - 2));
+                        ctx.arc(cx, cy, R - 2, sa1, ea1);
+                        ctx.arc(cx, cy, R - 2, -Math.PI / 2, ea2);
+                        ctx.lineTo(cx, cy); ctx.stroke();
+                    }
+                    // Text
+                    const dur = (24 - st + en) * 60;
+                    if (dur >= 5) {
+                        const durHours = 24 - st + en, centerHour = st + durHours / 2;
+                        const normalizedCenter = centerHour >= 24 ? centerHour - 24 : centerHour;
+                        const midAngle = (normalizedCenter / 24) * Math.PI * 2 - Math.PI / 2;
+                        ctx.save(); ctx.translate(cx + Math.cos(midAngle) * R * .5, cy + Math.sin(midAngle) * R * .5);
+                        let textRot = midAngle; if (midAngle > Math.PI / 2 || midAngle < -Math.PI / 2) textRot += Math.PI;
+                        ctx.rotate(textRot); ctx.fillStyle = '#fff';
+                        ctx.font = `600 ${Math.max(6, Math.min(9, R * .05 * fs))}px "Noto Sans KR"`;
+                        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                        ctx.fillText(b.title.slice(0, dur >= 15 ? 6 : 2), 0, 0); ctx.restore();
+                    }
+                } else {
+                    // Normal block
+                    if (en <= st) en = st + 1 / 60;
+                    const sa = (st / 24) * Math.PI * 2 - Math.PI / 2, ea = (en / 24) * Math.PI * 2 - Math.PI / 2;
+                    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, R - 2, sa, ea); ctx.closePath();
+                    ctx.fillStyle = color; ctx.fill();
+                    if (b.id === tplSelId) { ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke(); }
+                    // Text
+                    const dur = (en - st) * 60;
+                    if (dur >= 5) {
+                        const midAngle = (sa + ea) / 2;
+                        ctx.save(); ctx.translate(cx + Math.cos(midAngle) * R * .5, cy + Math.sin(midAngle) * R * .5);
+                        let textRot = midAngle; if (midAngle > Math.PI / 2 || midAngle < -Math.PI / 2) textRot += Math.PI;
+                        ctx.rotate(textRot); ctx.fillStyle = '#fff';
+                        ctx.font = `600 ${Math.max(6, Math.min(9, R * .05 * fs))}px "Noto Sans KR"`;
+                        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                        ctx.fillText(b.title.slice(0, dur >= 15 ? 6 : 2), 0, 0); ctx.restore();
+                    }
+                }
+            });
+            // Hour labels
+            for (let h = 0; h < 24; h += 6) {
+                const a = (h / 24) * Math.PI * 2 - Math.PI / 2;
+                ctx.fillStyle = dk ? '#666' : '#999'; ctx.font = '500 8px "Noto Sans KR"';
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText(fH(h === 0 ? 24 : h), cx + Math.cos(a) * (R + 10), cy + Math.sin(a) * (R + 10));
+            }
+            // Handle for selected block
+            if (tplSelId) {
+                const sel = tplBlocks.find(x => x.id === tplSelId);
+                if (sel) {
+                    let currentStart = sel.start, currentEnd = sel.end;
+                    if (tplResizeId === sel.id && tplDragE !== null) {
+                        if (tplResizeEdge === 's') currentStart = tplDragE; else currentEnd = tplDragE;
+                    }
+                    const startA = (currentStart / 24) * Math.PI * 2 - Math.PI / 2;
+                    const endA = (currentEnd / 24) * Math.PI * 2 - Math.PI / 2;
+                    const drawHandle = (angle) => {
+                        const hr = R + 3;
+                        ctx.beginPath(); ctx.arc(cx + Math.cos(angle) * hr, cy + Math.sin(angle) * hr, 4, 0, Math.PI * 2);
+                        ctx.fillStyle = '#6366f1'; ctx.fill(); ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.stroke();
+                    };
+                    drawHandle(startA); drawHandle(endA);
+                }
+            }
+        }
+        function initTplDrag() {
+            const cv = document.getElementById('tplCanvas'); if (!cv) return;
+            const MIN_UNIT = 1 / 60;
+            let lastAngle = null, accumH = null, resizeBlock = null;
+            function getAngle(e) {
+                const r = cv.getBoundingClientRect();
+                const x = (e.clientX - r.left) / r.width * cv.width - cv.width / 2;
+                const y = (e.clientY - r.top) / r.height * cv.height - cv.height / 2;
+                return Math.atan2(y, x);
+            }
+            function getHour(e) {
+                let a = getAngle(e) + Math.PI / 2; if (a < 0) a += Math.PI * 2;
+                return Math.round((a / (Math.PI * 2)) * 24 * 4) / 4;
+            }
+            function findBlock(h) {
+                for (const b of tplBlocks) {
+                    if (b.start > b.end) { if (h >= b.start || h < b.end) return b.id; }
+                    else { if (h >= b.start && h < b.end) return b.id; }
+                } return null;
+            }
+            function clickedHandle(h) {
+                if (!tplSelId) return null;
+                const b = tplBlocks.find(x => x.id === tplSelId); if (!b) return null;
+                if (Math.abs(h - b.start) < .5) return 's';
+                if (Math.abs(h - b.end) < .5 || (b.end === 24 && Math.abs(h) < .5)) return 'e';
+                return null;
+            }
+            cv.onmousedown = function (e) {
+                const h = getHour(e);
+                const handle = clickedHandle(h);
+                if (handle) {
+                    const b = tplBlocks.find(x => x.id === tplSelId);
+                    tplResizeId = tplSelId; tplResizeEdge = handle; tplDrag = 1;
+                    lastAngle = getAngle(e); accumH = handle === 's' ? b.start : b.end; resizeBlock = b;
+                    tplDragS = h; tplDragE = h; drawTplCanvas(); return;
+                }
+                const blkId = findBlock(h);
+                if (blkId) { tplSelId = tplSelId === blkId ? null : blkId; drawTplCanvas(); return; }
+                tplSelId = null; tplDrag = 1; tplDragS = h; tplDragE = h; drawTplCanvas();
+            };
+            cv.onmousemove = function (e) {
+                if (!tplDrag) return;
+                const currAngle = getAngle(e);
+                if (tplResizeId && lastAngle !== null && resizeBlock) {
+                    let delta = currAngle - lastAngle;
+                    if (delta > Math.PI) delta -= Math.PI * 2;
+                    if (delta < -Math.PI) delta += Math.PI * 2;
+                    accumH += (delta / (Math.PI * 2)) * 24;
+                    while (accumH < 0) accumH += 24; while (accumH >= 24) accumH -= 24;
+                    let clampedVal = Math.round(accumH * 60) / 60;
+                    // Collision detection with other blocks
+                    for (const other of tplBlocks) {
+                        if (other.id === tplResizeId) continue;
+                        const newStart = tplResizeEdge === 's' ? clampedVal : resizeBlock.start;
+                        const newEnd = tplResizeEdge === 's' ? resizeBlock.end : clampedVal;
+                        const wouldOverlap = (s1, e1, s2, e2) => {
+                            const inRange = (pt, s, e) => { if (s <= e) return pt > s && pt < e; return pt > s || pt < e; };
+                            const s1InS2 = inRange(s1, s2, e2), e1InS2 = inRange(e1 === 24 ? 0 : e1, s2, e2);
+                            const s2InS1 = inRange(s2, s1, e1), e2InS1 = inRange(e2 === 24 ? 0 : e2, s1, e1);
+                            return s1InS2 || e1InS2 || s2InS1 || e2InS1;
+                        };
+                        if (wouldOverlap(newStart, newEnd, other.start, other.end)) {
+                            if (tplResizeEdge === 's') {
+                                const spansMidnight = other.start > other.end || (other.end === 24 && other.start > 12);
+                                clampedVal = spansMidnight ? (other.end === 24 ? 0 : other.end) : other.end;
+                            } else { clampedVal = other.start; }
+                        }
+                    }
+                    // Minimum duration
+                    if (tplResizeEdge === 's') {
+                        const dist = (resizeBlock.end - clampedVal + 24) % 24;
+                        if (dist < MIN_UNIT) { clampedVal = resizeBlock.end - MIN_UNIT; if (clampedVal < 0) clampedVal += 24; }
+                    } else {
+                        const dist = (clampedVal - resizeBlock.start + 24) % 24;
+                        if (dist < MIN_UNIT) { clampedVal = resizeBlock.start + MIN_UNIT; if (clampedVal >= 24) clampedVal -= 24; }
+                    }
+                    tplDragE = clampedVal;
+                } else { tplDragE = getHour(e); }
+                lastAngle = currAngle; drawTplCanvas();
+            };
+            cv.onmouseup = function (e) {
+                if (!tplDrag) return; tplDrag = 0;
+                if (tplResizeId) {
+                    const b = tplBlocks.find(x => x.id === tplResizeId);
+                    if (b && tplDragE !== null) {
+                        if (tplResizeEdge === 's') b.start = tplDragE; else b.end = tplDragE;
+                    }
+                    tplResizeId = null; tplResizeEdge = null; lastAngle = null; accumH = null; resizeBlock = null;
+                    renderTplBlockList(); return;
+                }
+                const s = Math.min(tplDragS, tplDragE), en = Math.max(tplDragS, tplDragE);
+                if (en - s >= .25) {
+                    document.getElementById('tbSH').value = Math.floor(s);
+                    document.getElementById('tbSM').value = Math.round((s % 1) * 60);
+                    document.getElementById('tbEH').value = Math.floor(en);
+                    document.getElementById('tbEM').value = Math.round((en % 1) * 60);
+                    tbColor = 0; tbStasks = []; initCol('tbColorPicker', 0); renderTbStasks();
+                    document.getElementById('tbTitle').value = '';
+                    document.getElementById('tplBlockModal').classList.add('show');
+                }
+                tplDragS = null; tplDragE = null; lastAngle = null; drawTplCanvas();
+            };
+        }
+        function addTplBlock() { tbColor = 0; tbStasks = []; document.getElementById('tbTitle').value = ''; document.getElementById('tbSH').value = 9; document.getElementById('tbSM').value = 0; document.getElementById('tbEH').value = 10; document.getElementById('tbEM').value = 0; initCol('tbColorPicker', 0); renderTbStasks(); document.getElementById('tplBlockModal').classList.add('show') }
+        function closeTplBlock() { document.getElementById('tplBlockModal').classList.remove('show') }
+        function renderTbStasks() { document.getElementById('tbStaskList').innerHTML = tbStasks.map((s, i) => `<div class="stask-input"><input type="text" value="${s.text || ''}" onchange="updTbStask(${i},this.value)" placeholder="할일"><button onclick="remTbStask(${i})">×</button></div>`).join('') }
+        function addTbStask() { tbStasks.push({ text: '', done: 0 }); renderTbStasks() }
+        function remTbStask(i) { tbStasks.splice(i, 1); renderTbStasks() }
+        function updTbStask(i, t) { tbStasks[i].text = t }
+        function saveTplBlock() { const title = document.getElementById('tbTitle').value.trim(); if (!title) return alert('제목 입력'); const sh = +document.getElementById('tbSH').value, sm = +document.getElementById('tbSM').value, eh = +document.getElementById('tbEH').value, em = +document.getElementById('tbEM').value; let st = sh + sm / 60, en = eh + em / 60; if (en === 0) en = 24; const dur = (en >= st) ? (en - st) : (24 - st + en); if (dur < 1 / 60) return alert('최소 1분'); document.querySelectorAll('#tbStaskList input[type="text"]').forEach((inp, i) => { if (tbStasks[i]) tbStasks[i].text = inp.value }); tplBlocks.push({ id: Date.now(), title, start: st, end: en, color: tbColor, subtasks: tbStasks.filter(s => s.text.trim()) }); closeTplBlock(); renderTplBlockList() }
+        function saveNewTpl() { const nm = document.getElementById('tplName').value.trim(); if (!nm) return alert('이름 입력'); if (!tplBlocks.length) return alert('일정 추가'); if (editTplKey) tpls[editTplKey] = { name: nm, desc: document.getElementById('tplDesc').value.trim() || '사용자', repeat: repDays, blocks: tplBlocks }; else tpls['t' + Date.now()] = { name: nm, desc: document.getElementById('tplDesc').value.trim() || '사용자', repeat: repDays, blocks: tplBlocks }; save(); closeNewTpl(); renderTplList() }
+        function openSet() { tmpSets = JSON.parse(JSON.stringify(sets)); applyTmpTheme(); document.getElementById('setModal').classList.add('show') }
+        function cancelSet() { tmpSets = null; document.getElementById('setModal').classList.remove('show') }
+        function saveSet() { sets = tmpSets; tmpSets = null; save(); applyTheme(); if (sets.notif && 'Notification' in window && Notification.permission === 'default') Notification.requestPermission(); document.getElementById('setModal').classList.remove('show') }
+        function goToday() { cur = new Date(); selId = null; renderWeek(); renderSched(); draw(); }
+        function showTplPicker() { const list = document.getElementById('tplPickerList'); const entries = Object.entries(tpls); if (!entries.length) { list.innerHTML = '<div style="text-align:center;color:var(--text3);padding:16px;font-size:12px">템플릿이 없습니다</div>'; } else { list.innerHTML = entries.map(([k, t]) => `<div class="tpl-item" style="cursor:pointer" onclick="loadTpl('${k}')"><div class="tpl-icon">📅</div><div class="tpl-info"><div class="tpl-name">${t.name}</div><div class="tpl-desc">${t.blocks.length}개 일정</div></div></div>`).join(''); } document.getElementById('tplPickerModal').classList.add('show'); }
+        function closeTplPicker() { document.getElementById('tplPickerModal').classList.remove('show'); }
+        function loadTpl(k) { const t = tpls[k]; if (t) { const b = JSON.parse(JSON.stringify(t.blocks)); b.forEach(x => x.id = Date.now() + Math.random()); sBlocks(b); closeTplPicker(); renderSched(); draw(); } }
+        init();
+    </script>
+</body>
+
+</html>
