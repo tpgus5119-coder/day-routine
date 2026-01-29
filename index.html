@@ -1160,15 +1160,15 @@
                     if (!b.alarm) return;
                     const alarmKey = `${todayKey}-${b.id}`;
                     if (alarmFiredToday.has(alarmKey)) return;
-                    // Trigger when current time >= block start (exact or just passed)
-                    if (nowH >= b.start && nowH < b.start + 0.5 / 60) {
+                    // Trigger when current time >= block start and within 2 minute window
+                    if (nowH >= b.start && nowH < b.start + 2 / 60) {
                         alarmFiredToday.add(alarmKey);
                         triggerAlarm(b);
                     }
                 });
             };
             check();
-            setInterval(check, 10000); // Check every 10 seconds for better accuracy
+            setInterval(check, 15000); // Check every 15 seconds for mobile reliability
             // Reset fired alarms at midnight
             setInterval(() => { const h = new Date().getHours(); if (h === 0) alarmFiredToday.clear(); }, 60000);
         }
@@ -1383,15 +1383,15 @@
                     const startA = (currentStart / 24) * Math.PI * 2 - Math.PI / 2;
                     const endA = (currentEnd / 24) * Math.PI * 2 - Math.PI / 2;
 
-                    // Circle handle
+                    // Circle handle (larger for mobile touch)
                     const drawHandle = (angle) => {
-                        const handleR = R + 3;
+                        const handleR = R + 5;
                         ctx.beginPath();
-                        ctx.arc(cx + Math.cos(angle) * handleR, cy + Math.sin(angle) * handleR, 5, 0, Math.PI * 2);
+                        ctx.arc(cx + Math.cos(angle) * handleR, cy + Math.sin(angle) * handleR, 10, 0, Math.PI * 2);
                         ctx.fillStyle = '#6366f1';
                         ctx.fill();
                         ctx.strokeStyle = '#fff';
-                        ctx.lineWidth = 1.5;
+                        ctx.lineWidth = 3;
                         ctx.stroke();
                     };
 
@@ -1542,9 +1542,9 @@
                 const { x, y } = getXY(e);
                 const dist = (bx, by) => Math.sqrt((x - bx) ** 2 + (y - by) ** 2);
                 const startA = (sel.start / 24) * Math.PI * 2 - Math.PI / 2;
-                if (dist(Math.cos(startA) * handleR, Math.sin(startA) * handleR) < 18) return { id: sel.id, e: 's', origVal: sel.start };
+                if (dist(Math.cos(startA) * handleR, Math.sin(startA) * handleR) < 28) return { id: sel.id, e: 's', origVal: sel.start };
                 const endA = (sel.end / 24) * Math.PI * 2 - Math.PI / 2;
-                if (dist(Math.cos(endA) * handleR, Math.sin(endA) * handleR) < 18) return { id: sel.id, e: 'e', origVal: sel.end };
+                if (dist(Math.cos(endA) * handleR, Math.sin(endA) * handleR) < 28) return { id: sel.id, e: 'e', origVal: sel.end };
                 return null;
             }
 
@@ -1694,6 +1694,33 @@
             cv.onmouseleave = function () {
                 if (isDrag) { isDrag = 0; hint.style.display = 'none'; hint.style.color = ''; resizeId = null; resizeEdge = null; lastAngle = null; accumH = null; resizeBlock = null; dragS = null; dragE = null; draw(); }
             };
+
+            // Touch event helpers
+            function touchToMouse(t) {
+                return { clientX: t.touches[0].clientX, clientY: t.touches[0].clientY };
+            }
+            function touchEndToMouse(t) {
+                return { clientX: t.changedTouches[0].clientX, clientY: t.changedTouches[0].clientY };
+            }
+
+            cv.addEventListener('touchstart', function (e) {
+                e.preventDefault();
+                cv.onmousedown(touchToMouse(e));
+            }, { passive: false });
+
+            cv.addEventListener('touchmove', function (e) {
+                e.preventDefault();
+                cv.onmousemove(touchToMouse(e));
+            }, { passive: false });
+
+            cv.addEventListener('touchend', function (e) {
+                e.preventDefault();
+                cv.onmouseup(touchEndToMouse(e));
+            }, { passive: false });
+
+            cv.addEventListener('touchcancel', function (e) {
+                cv.onmouseleave();
+            });
         }
         function setView(v) { document.getElementById('vWheel').classList.toggle('active', v === 'wheel'); document.getElementById('vCal').classList.toggle('active', v === 'cal'); document.getElementById('wheelSec').classList.toggle('hide', v !== 'wheel'); document.getElementById('calSec').classList.toggle('hide', v !== 'cal'); if (v === 'wheel') setTimeout(resizeCanvas, 10); if (v === 'cal') renderCal() }
         function openModal(id = null, ds = null, de = null) { editId = id; stasks = []; if (id) { const b = gBlocks().find(x => x.id === id); document.getElementById('modalTitle').textContent = '일정 편집'; document.getElementById('iTitle').value = b.title; document.getElementById('iDesc').value = b.desc || ''; document.getElementById('sH').value = Math.floor(b.start); document.getElementById('sM').value = Math.round((b.start % 1) * 60); document.getElementById('eH').value = Math.floor(b.end); document.getElementById('eM').value = Math.round((b.end % 1) * 60); selColor = b.color; setAlarm(b.alarm || 0); setAlarmType(b.alarmType || 'sound'); if (b.sound) document.getElementById('alarmSoundSel').value = b.sound; if (b.volume !== undefined) { document.getElementById('alarmVol').value = b.volume; updVol(); } if (b.alarmRep) document.getElementById('alarmRep').value = b.alarmRep; stasks = b.subtasks ? [...b.subtasks] : [] } else { document.getElementById('modalTitle').textContent = '새 일정'; document.getElementById('iTitle').value = ''; document.getElementById('iDesc').value = ''; if (ds !== null) { document.getElementById('sH').value = Math.floor(ds); document.getElementById('sM').value = Math.round((ds % 1) * 60); document.getElementById('eH').value = Math.floor(de); document.getElementById('eM').value = Math.round((de % 1) * 60) } else { document.getElementById('sH').value = 9; document.getElementById('sM').value = 0; document.getElementById('eH').value = 10; document.getElementById('eM').value = 0 } selColor = 0; setAlarm(0); setAlarmType('sound'); stasks = [] } initCol('colorPicker', selColor); renderStasks(); document.getElementById('modal').classList.add('show') }
