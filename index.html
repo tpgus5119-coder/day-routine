@@ -16,6 +16,7 @@
     <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap"
         rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
         // Register Service Worker
         if ('serviceWorker' in navigator) {
@@ -942,6 +943,7 @@
                         <div class="pie-icon"></div> 시간표
                     </button><button class="vbtn" id="vCal" onclick="setView('cal')">📅 달력</button></div>
                 <div class="header-btns"><button class="ibtn" onclick="openTpl()">📂</button><button class="ibtn"
+                        id="syncIcon" onclick="manualSync()" title="클라우드 동기화">☁️</button><button class="ibtn"
                         onclick="openSet()">⚙️</button></div>
             </header>
             <div class="date-bar-row"
@@ -1147,7 +1149,7 @@
         let repDays = [], tplBlocks = [], tbColor = 0, tbStasks = [], editTplKey = null, tplDrag = 0, tplDragS = null, tplDragE = null, tplResizeId = null, tplResizeEdge = null, tplSelId = null;
         const M = { m1: [[523, 659, 784, 880], [.15, .15, .15, .3]], m2: [[392, 440, 494, 523, 587], [.12, .12, .12, .12, .4]], m3: [[659, 784, 880, 1047], [.1, .1, .1, .5]], m4: [[349, 392, 440, 494, 523], [.2, .2, .2, .2, .4]] };
         let alarmFiredToday = new Set(); // Track which alarms already fired today
-        function init() { load(); initSel(); applyTheme(); renderWeek(); renderCal(); renderSched(); resizeCanvas(); draw(); initDrag(); startAlarmChecker(); requestNotificationPermission(); window.onresize = resizeCanvas }
+        function init() { initSupabase(); load(); initSel(); applyTheme(); renderWeek(); renderCal(); renderSched(); resizeCanvas(); draw(); initDrag(); startAlarmChecker(); requestNotificationPermission(); window.onresize = resizeCanvas }
         function requestNotificationPermission() { if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission(); }
         function startAlarmChecker() {
             const check = () => {
@@ -1212,8 +1214,65 @@
             document.body.appendChild(popup);
             setTimeout(() => popup.remove(), 15000);
         }
-        function load() { const s = localStorage.getItem('dr'); if (s) { const d = JSON.parse(s); scheds = d.s || {}; tpls = d.t || {}; sets = d.e || { dark: 1, use12h: 0, fontSize: 1 }; if (sets.fontSize === 0.85) { sets.fontSize = 0.7; save(); } else if (sets.fontSize === 1.15) { sets.fontSize = 1.3; save(); } } else { tpls = { d: { name: 'Daily', desc: '평일', repeat: ['mon', 'tue', 'wed', 'thu', 'fri'], blocks: [{ id: 1, title: '수면', start: 0, end: 6, color: 5 }, { id: 2, title: '출근준비', start: 6, end: 8, color: 3, alarm: 1 }, { id: 3, title: '업무', start: 9, end: 18, color: 0, subtasks: [{ text: '이메일', done: 0 }] }, { id: 4, title: '저녁', start: 18.5, end: 19.5, color: 1 }, { id: 5, title: '학습', start: 20, end: 22, color: 4 }] } } } }
-        function save() { localStorage.setItem('dr', JSON.stringify({ s: scheds, t: tpls, e: sets })) }
+        function load() { const s = localStorage.getItem('dr'); if (s) { const d = JSON.parse(s); scheds = d.s || {}; tpls = d.t || {}; sets = d.e || { dark: 1, use12h: 0, fontSize: 1 }; if (sets.fontSize === 0.85) { sets.fontSize = 0.7; save(); } else if (sets.fontSize === 1.15) { sets.fontSize = 1.3; save(); } } else { tpls = { d: { name: 'Daily', desc: '평일', repeat: ['mon', 'tue', 'wed', 'thu', 'fri'], blocks: [{ id: 1, title: '수면', start: 0, end: 6, color: 5 }, { id: 2, title: '출근준비', start: 6, end: 8, color: 3, alarm: 1 }, { id: 3, title: '업무', start: 9, end: 18, color: 0, subtasks: [{ text: '이메일', done: 0 }] }, { id: 4, title: '저녁', start: 18.5, end: 19.5, color: 1 }, { id: 5, title: '학습', start: 20, end: 22, color: 4 }] } } } syncFromCloud(); }
+        function save() { localStorage.setItem('dr', JSON.stringify({ s: scheds, t: tpls, e: sets })); syncToCloud(); }
+
+        // Supabase Cloud Sync
+        const SUPABASE_URL = 'https://vhtkjysrkeervgnojygc.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_NJaKkIHvFGnD9PN3vS4eng_fOy7PMIN';
+        let supabase = null;
+        let syncStatus = 'idle'; // idle, syncing, success, error
+
+        function initSupabase() {
+            try {
+                if (window.supabase && window.supabase.createClient) {
+                    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+                    console.log('Supabase initialized');
+                }
+            } catch (e) { console.error('Supabase init error:', e); }
+        }
+
+        async function syncToCloud() {
+            if (!supabase) return;
+            syncStatus = 'syncing';
+            updateSyncIcon();
+            try {
+                const data = { id: 'main', blocks: scheds, templates: tpls, settings: sets, updated_at: new Date().toISOString() };
+                const { error } = await supabase.from('day_routine_sync').upsert(data);
+                syncStatus = error ? 'error' : 'success';
+                if (error) console.error('Sync error:', error);
+            } catch (e) { syncStatus = 'error'; console.error('Sync error:', e); }
+            updateSyncIcon();
+            setTimeout(() => { syncStatus = 'idle'; updateSyncIcon(); }, 2000);
+        }
+
+        async function syncFromCloud() {
+            if (!supabase) { setTimeout(initSupabase, 100); return; }
+            syncStatus = 'syncing';
+            updateSyncIcon();
+            try {
+                const { data, error } = await supabase.from('day_routine_sync').select('*').eq('id', 'main').single();
+                if (data && !error) {
+                    scheds = data.blocks || {};
+                    tpls = data.templates || {};
+                    sets = data.settings || sets;
+                    localStorage.setItem('dr', JSON.stringify({ s: scheds, t: tpls, e: sets }));
+                    applyTheme(); renderWeek(); renderCal(); renderSched(); draw();
+                    syncStatus = 'success';
+                } else { syncStatus = error ? 'error' : 'success'; }
+            } catch (e) { syncStatus = 'error'; console.error('Load error:', e); }
+            updateSyncIcon();
+            setTimeout(() => { syncStatus = 'idle'; updateSyncIcon(); }, 2000);
+        }
+
+        function updateSyncIcon() {
+            const el = document.getElementById('syncIcon');
+            if (!el) return;
+            el.textContent = syncStatus === 'syncing' ? '🔄' : (syncStatus === 'success' ? '☁️' : (syncStatus === 'error' ? '⚠️' : '☁️'));
+            el.title = syncStatus === 'syncing' ? '동기화 중...' : (syncStatus === 'success' ? '동기화 완료' : (syncStatus === 'error' ? '동기화 실패' : '클라우드 동기화'));
+        }
+
+        function manualSync() { syncFromCloud(); }
         function gk(d) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` }
         function gBlocks() { const k = gk(cur); if (scheds[k]) return scheds[k]; const dn = DK[cur.getDay()]; for (const t of Object.values(tpls)) if (t.repeat && t.repeat.includes(dn)) return JSON.parse(JSON.stringify(t.blocks)); return [] }
         function sBlocks(b) { scheds[gk(cur)] = b; save() }
