@@ -1358,11 +1358,14 @@
             // Hour tick marks and labels
             for (let h = 0; h < 24; h++) {
                 const a = (h / 24) * Math.PI * 2 - Math.PI / 2;
-                ctx.beginPath();
-                ctx.moveTo(cx + Math.cos(a) * R, cy + Math.sin(a) * R);
-                ctx.lineTo(cx + Math.cos(a) * (R + (h % 6 === 0 ? 8 : 4)), cy + Math.sin(a) * (R + (h % 6 === 0 ? 8 : 4)));
-                ctx.strokeStyle = dk ? 'rgba(255,255,255,.35)' : 'rgba(0,0,0,.25)';
-                ctx.lineWidth = h % 6 === 0 ? 2 : 1; ctx.stroke();
+                // Skip drawing tick mark at h=0 (24:00 line)
+                if (h !== 0) {
+                    ctx.beginPath();
+                    ctx.moveTo(cx + Math.cos(a) * R, cy + Math.sin(a) * R);
+                    ctx.lineTo(cx + Math.cos(a) * (R + (h % 6 === 0 ? 8 : 4)), cy + Math.sin(a) * (R + (h % 6 === 0 ? 8 : 4)));
+                    ctx.strokeStyle = dk ? 'rgba(255,255,255,.35)' : 'rgba(0,0,0,.25)';
+                    ctx.lineWidth = h % 6 === 0 ? 2 : 1; ctx.stroke();
+                }
                 if (h % 3 === 0) {
                     ctx.fillStyle = dk ? '#bbb' : '#444';
                     ctx.font = '600 13px "Noto Sans KR"'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -1383,16 +1386,35 @@
                     const startA = (currentStart / 24) * Math.PI * 2 - Math.PI / 2;
                     const endA = (currentEnd / 24) * Math.PI * 2 - Math.PI / 2;
 
-                    // Circle handle (larger for mobile touch)
+                    // Pill/capsule handle (iOS style - dark with white inner bar)
                     const drawHandle = (angle) => {
-                        const handleR = R + 5;
+                        const handleR = R + 8;
+                        const hx = cx + Math.cos(angle) * handleR;
+                        const hy = cy + Math.sin(angle) * handleR;
+
+                        // Outer dark capsule
+                        ctx.save();
+                        ctx.translate(hx, hy);
+                        ctx.rotate(angle + Math.PI / 2);
+
+                        // Dark pill background
                         ctx.beginPath();
-                        ctx.arc(cx + Math.cos(angle) * handleR, cy + Math.sin(angle) * handleR, 10, 0, Math.PI * 2);
-                        ctx.fillStyle = '#6366f1';
+                        ctx.roundRect(-8, -14, 16, 28, 8);
+                        ctx.fillStyle = dk ? '#333' : '#2a2a3a';
                         ctx.fill();
-                        ctx.strokeStyle = '#fff';
-                        ctx.lineWidth = 3;
+                        ctx.strokeStyle = dk ? '#555' : '#444';
+                        ctx.lineWidth = 1;
                         ctx.stroke();
+
+                        // White inner lines (grip)
+                        ctx.fillStyle = '#888';
+                        for (let i = -1; i <= 1; i++) {
+                            ctx.beginPath();
+                            ctx.roundRect(-4, i * 5 - 1, 8, 2, 1);
+                            ctx.fill();
+                        }
+
+                        ctx.restore();
                     };
 
                     drawHandle(startA);
