@@ -1149,7 +1149,7 @@
         let repDays = [], tplBlocks = [], tbColor = 0, tbStasks = [], editTplKey = null, tplDrag = 0, tplDragS = null, tplDragE = null, tplResizeId = null, tplResizeEdge = null, tplSelId = null;
         const M = { m1: [[523, 659, 784, 880], [.15, .15, .15, .3]], m2: [[392, 440, 494, 523, 587], [.12, .12, .12, .12, .4]], m3: [[659, 784, 880, 1047], [.1, .1, .1, .5]], m4: [[349, 392, 440, 494, 523], [.2, .2, .2, .2, .4]] };
         let alarmFiredToday = new Set(); // Track which alarms already fired today
-        function init() { initSupabase(); load(); initSel(); applyTheme(); renderWeek(); renderCal(); renderSched(); resizeCanvas(); draw(); initDrag(); startAlarmChecker(); requestNotificationPermission(); window.onresize = resizeCanvas }
+        function init() { initSupabase(); load(); initSel(); applyTheme(); renderWeek(); renderCal(); renderSched(); resizeCanvas(); draw(); initDrag(); startAlarmChecker(); requestNotificationPermission(); window.onresize = resizeCanvas; setTimeout(resizeCanvas, 100); setTimeout(resizeCanvas, 500); }
         function requestNotificationPermission() { if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission(); }
         function startAlarmChecker() {
             const check = () => {
