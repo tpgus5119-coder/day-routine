@@ -1270,6 +1270,7 @@
                 const data = { id: 'main', blocks: scheds, templates: tpls, settings: sets, updated_at: new Date().toISOString() };
                 const { error } = await supabase.from('day_routine_sync').upsert(data);
                 syncStatus = error ? 'error' : 'success';
+                if (!error) localStorage.setItem('lastSyncTime', new Date().toLocaleString('ko-KR'));
                 if (error) console.error('Sync error:', error);
             } catch (e) { syncStatus = 'error'; console.error('Sync error:', e); }
             updateSyncIcon();
@@ -1287,6 +1288,7 @@
                     tpls = data.templates || {};
                     sets = data.settings || sets;
                     localStorage.setItem('dr', JSON.stringify({ s: scheds, t: tpls, e: sets }));
+                    localStorage.setItem('lastSyncTime', new Date().toLocaleString('ko-KR'));
                     applyTheme(); renderWeek(); renderCal(); renderSched(); draw();
                     syncStatus = 'success';
                 } else { syncStatus = error ? 'error' : 'success'; }
@@ -1308,8 +1310,30 @@
                 initSupabase();
                 return;
             }
-            syncFromCloud();
+            const lastSync = localStorage.getItem('lastSyncTime') || '없음';
+            const html = `
+                <div style="text-align:center;padding:20px;">
+                    <div style="font-size:14px;margin-bottom:16px;color:var(--text2)">마지막 동기화: ${lastSync}</div>
+                    <div style="display:flex;gap:12px;justify-content:center;">
+                        <button onclick="doDownload()" style="flex:1;padding:14px;font-size:14px;border-radius:10px;border:none;background:var(--accent);color:white;cursor:pointer">
+                            ⬇️ 다운로드<br><span style="font-size:11px;opacity:.8">클라우드 → 기기</span>
+                        </button>
+                        <button onclick="doUpload()" style="flex:1;padding:14px;font-size:14px;border-radius:10px;border:none;background:#10b981;color:white;cursor:pointer">
+                            ⬆️ 업로드<br><span style="font-size:11px;opacity:.8">기기 → 클라우드</span>
+                        </button>
+                    </div>
+                    <button onclick="closeSyncModal()" style="margin-top:16px;padding:10px 24px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);cursor:pointer">닫기</button>
+                </div>`;
+            const modal = document.createElement('div');
+            modal.id = 'syncModal';
+            modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:9999;';
+            modal.innerHTML = `<div style="background:var(--card);border-radius:16px;max-width:320px;width:90%;box-shadow:0 10px 40px rgba(0,0,0,.3)">${html}</div>`;
+            modal.onclick = (e) => { if (e.target === modal) closeSyncModal(); };
+            document.body.appendChild(modal);
         }
+        function closeSyncModal() { const m = document.getElementById('syncModal'); if (m) m.remove(); }
+        async function doDownload() { closeSyncModal(); await syncFromCloud(); alert('다운로드 완료!'); }
+        async function doUpload() { closeSyncModal(); await syncToCloud(); alert('업로드 완료!'); }
         function gk(d) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` }
         function gBlocks() { const k = gk(cur); if (scheds[k]) return scheds[k]; const dn = DK[cur.getDay()]; for (const t of Object.values(tpls)) if (t.repeat && t.repeat.includes(dn)) return JSON.parse(JSON.stringify(t.blocks)); return [] }
         function sBlocks(b) { scheds[gk(cur)] = b; save() }
