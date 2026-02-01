@@ -1352,9 +1352,10 @@
         function toggleSt(bid, idx) { const b = gBlocks(), bl = b.find(x => x.id === bid); if (bl && bl.subtasks && bl.subtasks[idx]) { bl.subtasks[idx].done = !bl.subtasks[idx].done; sBlocks(b); renderSched() } }
         function resizeCanvas() { const sz = 260, cv = document.getElementById('canvas'), dpr = window.devicePixelRatio || 1; if (!cv) return; cv.width = sz * dpr; cv.height = sz * dpr; cv.style.width = sz + 'px'; cv.style.height = sz + 'px'; draw() }
         function draw() {
-            const cv = document.getElementById('canvas'); if (!cv) return;
-            const ctx = cv.getContext('2d'); if (!ctx) return;
+            const cv = document.getElementById('canvas'); if (!cv) { console.log('canvas not found'); return; }
+            const ctx = cv.getContext('2d'); if (!ctx) { console.log('context not found'); return; }
             const W = cv.width || 520, H = cv.height || 520, cx = W / 2, cy = H / 2, R = Math.min(W, H) * .40;
+            console.log('draw() called: W=' + W + ' H=' + H + ' R=' + R);
             const dk = (typeof sets !== 'undefined' && sets) ? sets.dark : 1;
             const fs = (typeof sets !== 'undefined' && sets && sets.fontSize) ? sets.fontSize : 1;
             const b = (typeof gBlocks === 'function') ? gBlocks() : [];
