@@ -1241,10 +1241,10 @@
                 const currentY = getY(e);
                 const deltaY = startY - currentY; // positive when dragging up
 
-                const minWheelH = 200;
-                const minSchedH = 100;
-                const maxWheelH = window.innerHeight * 0.6;
-                const maxSchedH = window.innerHeight * 0.6;
+                const minWheelH = 50;
+                const minSchedH = 80;
+                const maxWheelH = window.innerHeight * 0.7;
+                const maxSchedH = window.innerHeight * 0.85;
 
                 const newWheelH = Math.max(minWheelH, Math.min(maxWheelH, startWheelHeight - deltaY));
                 const newSchedH = Math.max(minSchedH, Math.min(maxSchedH, startSchedHeight + deltaY));
