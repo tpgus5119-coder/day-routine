@@ -1142,6 +1142,14 @@
         </div>
     </div>
     <script>
+        // Global error handler to catch any uncaught errors
+        window.onerror = function (msg, url, line, col, error) {
+            const div = document.createElement('div');
+            div.style.cssText = 'position:fixed;top:0;left:0;right:0;background:red;color:white;padding:10px;z-index:9999;font-size:11px;word-break:break-all;';
+            div.textContent = 'JS Error: ' + msg + ' (line ' + line + ')';
+            document.body.appendChild(div);
+            return false;
+        };
         const C = ['#FF6B6B', '#FF9F43', '#FECA57', '#48DBFB', '#1DD1A1', '#5F27CD', '#A29BFE'], D = ['일', '월', '화', '수', '목', '금', '토'], DK = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
         let cur = new Date(), cal = new Date(), scheds = {}, tpls = {}, sets = { dark: 1, use12h: 0, fontSize: 1, notif: 1, widget: 1, watch: 1 };
         let tmpSets = null; // Temporary settings for modal
@@ -1149,7 +1157,30 @@
         let repDays = [], tplBlocks = [], tbColor = 0, tbStasks = [], editTplKey = null, tplDrag = 0, tplDragS = null, tplDragE = null, tplResizeId = null, tplResizeEdge = null, tplSelId = null;
         const M = { m1: [[523, 659, 784, 880], [.15, .15, .15, .3]], m2: [[392, 440, 494, 523, 587], [.12, .12, .12, .12, .4]], m3: [[659, 784, 880, 1047], [.1, .1, .1, .5]], m4: [[349, 392, 440, 494, 523], [.2, .2, .2, .2, .4]] };
         let alarmFiredToday = new Set(); // Track which alarms already fired today
-        function init() { initSupabase(); load(); initSel(); applyTheme(); renderWeek(); renderCal(); renderSched(); resizeCanvas(); draw(); initDrag(); startAlarmChecker(); requestNotificationPermission(); window.onresize = resizeCanvas; setTimeout(resizeCanvas, 100); setTimeout(resizeCanvas, 500); }
+        function init() {
+            const showError = (fn, e) => {
+                const div = document.createElement('div');
+                div.style.cssText = 'position:fixed;top:0;left:0;right:0;background:red;color:white;padding:10px;z-index:9999;font-size:12px;';
+                div.textContent = 'Error in ' + fn + ': ' + e.message;
+                document.body.appendChild(div);
+                console.error('Error in ' + fn + ':', e);
+            };
+            try { initSupabase(); } catch (e) { showError('initSupabase', e); }
+            try { load(); } catch (e) { showError('load', e); }
+            try { initSel(); } catch (e) { showError('initSel', e); }
+            try { applyTheme(); } catch (e) { showError('applyTheme', e); }
+            try { renderWeek(); } catch (e) { showError('renderWeek', e); }
+            try { renderCal(); } catch (e) { showError('renderCal', e); }
+            try { renderSched(); } catch (e) { showError('renderSched', e); }
+            try { resizeCanvas(); } catch (e) { showError('resizeCanvas', e); }
+            try { draw(); } catch (e) { showError('draw', e); }
+            try { initDrag(); } catch (e) { showError('initDrag', e); }
+            try { startAlarmChecker(); } catch (e) { showError('startAlarmChecker', e); }
+            try { requestNotificationPermission(); } catch (e) { showError('requestNotificationPermission', e); }
+            window.onresize = resizeCanvas;
+            setTimeout(resizeCanvas, 100);
+            setTimeout(resizeCanvas, 500);
+        }
         function requestNotificationPermission() { if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission(); }
         function startAlarmChecker() {
             const check = () => {
