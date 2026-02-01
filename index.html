@@ -1204,25 +1204,48 @@
         function initSchedHandle() {
             const handle = document.getElementById('schedHandle');
             const schedSec = document.getElementById('schedSec');
-            if (!handle || !schedSec) return;
+            const app = document.querySelector('.app');
+            if (!handle || !schedSec || !app) return;
 
+            let isDragging = false;
             let startY = 0;
-            let isExpanded = false;
+            let startHeight = 0;
 
-            const toggle = () => {
-                isExpanded = !isExpanded;
-                schedSec.classList.toggle('expanded', isExpanded);
+            const getY = (e) => e.touches ? e.touches[0].clientY : e.clientY;
+
+            const onStart = (e) => {
+                isDragging = true;
+                startY = getY(e);
+                startHeight = schedSec.offsetHeight;
+                schedSec.style.transition = 'none';
+                document.body.style.userSelect = 'none';
+                e.preventDefault();
             };
 
-            handle.addEventListener('click', toggle);
-            handle.addEventListener('touchend', (e) => {
-                if (Math.abs(e.changedTouches[0].clientY - startY) < 10) {
-                    toggle();
-                }
-            });
-            handle.addEventListener('touchstart', (e) => {
-                startY = e.touches[0].clientY;
-            });
+            const onMove = (e) => {
+                if (!isDragging) return;
+                const deltaY = startY - getY(e);
+                const newHeight = Math.max(120, Math.min(window.innerHeight * 0.7, startHeight + deltaY));
+                schedSec.style.flex = 'none';
+                schedSec.style.height = newHeight + 'px';
+            };
+
+            const onEnd = () => {
+                if (!isDragging) return;
+                isDragging = false;
+                schedSec.style.transition = 'height 0.2s ease';
+                document.body.style.userSelect = '';
+            };
+
+            // Mouse events
+            handle.addEventListener('mousedown', onStart);
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup', onEnd);
+
+            // Touch events
+            handle.addEventListener('touchstart', onStart, { passive: false });
+            document.addEventListener('touchmove', onMove, { passive: false });
+            document.addEventListener('touchend', onEnd);
         }
         function requestNotificationPermission() { if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission(); }
         function startAlarmChecker() {
