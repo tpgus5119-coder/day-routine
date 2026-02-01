@@ -1,4 +1,4 @@
-const CACHE_NAME = 'day-routine-v15';
+const CACHE_NAME = 'day-routine-v16';
 const urlsToCache = [
     './',
     './index.html',

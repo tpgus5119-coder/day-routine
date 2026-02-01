@@ -1254,6 +1254,10 @@
                 if (window.supabase && window.supabase.createClient) {
                     supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
                     console.log('Supabase initialized');
+                    updateSyncIcon();
+                } else {
+                    // Retry after CDN loads
+                    setTimeout(initSupabase, 500);
                 }
             } catch (e) { console.error('Supabase init error:', e); }
         }
