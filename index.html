@@ -1205,7 +1205,11 @@
             const handle = document.getElementById('schedHandle');
             const schedSec = document.getElementById('schedSec');
             const app = document.querySelector('.app');
-            if (!handle || !schedSec || !app) return;
+            console.log('initSchedHandle called', { handle, schedSec, app });
+            if (!handle || !schedSec || !app) {
+                console.log('Missing elements for drag');
+                return;
+            }
 
             let isDragging = false;
             let startY = 0;
@@ -1214,6 +1218,7 @@
             const getY = (e) => e.touches ? e.touches[0].clientY : e.clientY;
 
             const onStart = (e) => {
+                console.log('Drag START', e.type);
                 isDragging = true;
                 startY = getY(e);
                 startHeight = schedSec.offsetHeight;
@@ -1224,14 +1229,17 @@
 
             const onMove = (e) => {
                 if (!isDragging) return;
-                const deltaY = startY - getY(e);
+                const currentY = getY(e);
+                const deltaY = startY - currentY;
                 const newHeight = Math.max(120, Math.min(window.innerHeight * 0.7, startHeight + deltaY));
+                console.log('Drag MOVE', { deltaY, newHeight });
                 schedSec.style.flex = 'none';
                 schedSec.style.height = newHeight + 'px';
             };
 
             const onEnd = () => {
                 if (!isDragging) return;
+                console.log('Drag END');
                 isDragging = false;
                 schedSec.style.transition = 'height 0.2s ease';
                 document.body.style.userSelect = '';
@@ -1246,6 +1254,8 @@
             handle.addEventListener('touchstart', onStart, { passive: false });
             document.addEventListener('touchmove', onMove, { passive: false });
             document.addEventListener('touchend', onEnd);
+
+            console.log('Drag handlers attached');
         }
         function requestNotificationPermission() { if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission(); }
         function startAlarmChecker() {
