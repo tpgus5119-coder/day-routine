@@ -292,6 +292,10 @@
             display: none
         }
 
+        .wheel-sec.dragging {
+            flex: none !important
+        }
+
         .wcard {
             background: var(--card);
             border-radius: 20px;
@@ -1204,16 +1208,17 @@
         function initSchedHandle() {
             const handle = document.getElementById('schedHandle');
             const schedSec = document.getElementById('schedSec');
-            const app = document.querySelector('.app');
-            console.log('initSchedHandle called', { handle, schedSec, app });
-            if (!handle || !schedSec || !app) {
+            const wheelSec = document.querySelector('.wheel-sec');
+            console.log('initSchedHandle called', { handle, schedSec, wheelSec });
+            if (!handle || !schedSec || !wheelSec) {
                 console.log('Missing elements for drag');
                 return;
             }
 
             let isDragging = false;
             let startY = 0;
-            let startHeight = 0;
+            let startWheelHeight = 0;
+            let startSchedHeight = 0;
 
             const getY = (e) => e.touches ? e.touches[0].clientY : e.clientY;
 
@@ -1221,7 +1226,11 @@
                 console.log('Drag START', e.type);
                 isDragging = true;
                 startY = getY(e);
-                startHeight = schedSec.offsetHeight;
+                startWheelHeight = wheelSec.offsetHeight;
+                startSchedHeight = schedSec.offsetHeight;
+                wheelSec.style.transition = 'none';
+                schedSec.style.transition = 'none';
+                wheelSec.classList.add('dragging');
                 schedSec.classList.add('dragging');
                 document.body.style.userSelect = 'none';
                 e.preventDefault();
@@ -1230,18 +1239,28 @@
             const onMove = (e) => {
                 if (!isDragging) return;
                 const currentY = getY(e);
-                const deltaY = startY - currentY;
-                const newHeight = Math.max(120, Math.min(window.innerHeight * 0.7, startHeight + deltaY));
-                console.log('Drag MOVE', { deltaY, newHeight, current: schedSec.style.height });
-                schedSec.style.height = newHeight + 'px';
+                const deltaY = startY - currentY; // positive when dragging up
+
+                const minWheelH = 200;
+                const minSchedH = 100;
+                const maxWheelH = window.innerHeight * 0.6;
+                const maxSchedH = window.innerHeight * 0.6;
+
+                const newWheelH = Math.max(minWheelH, Math.min(maxWheelH, startWheelHeight - deltaY));
+                const newSchedH = Math.max(minSchedH, Math.min(maxSchedH, startSchedHeight + deltaY));
+
+                console.log('Drag MOVE', { deltaY, newWheelH, newSchedH });
+                wheelSec.style.flex = 'none';
+                wheelSec.style.height = newWheelH + 'px';
+                schedSec.style.flex = 'none';
+                schedSec.style.height = newSchedH + 'px';
             };
 
             const onEnd = () => {
                 if (!isDragging) return;
-                console.log('Drag END', schedSec.style.height);
+                console.log('Drag END', { wheel: wheelSec.style.height, sched: schedSec.style.height });
                 isDragging = false;
                 document.body.style.userSelect = '';
-                // Keep dragging class to maintain height
             };
 
             // Mouse events
