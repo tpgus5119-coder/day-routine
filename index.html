@@ -407,7 +407,38 @@
             padding: 0 16px 16px;
             flex: 1;
             max-height: none;
-            overflow-y: auto
+            overflow-y: auto;
+            transition: flex 0.2s ease;
+            min-height: 120px;
+            position: relative
+        }
+
+        .sched-sec.expanded {
+            flex: 3
+        }
+
+        .sched-handle {
+            display: flex;
+            justify-content: center;
+            padding: 12px 0 8px;
+            cursor: grab;
+            touch-action: none
+        }
+
+        .sched-handle:active {
+            cursor: grabbing
+        }
+
+        .handle-bar {
+            width: 40px;
+            height: 5px;
+            background: var(--text3);
+            border-radius: 3px;
+            opacity: 0.5
+        }
+
+        .handle-bar:hover {
+            opacity: 0.8
         }
 
         .sched-header {
@@ -960,6 +991,9 @@
                 <div class="cal-grid" id="calGrid"></div>
             </div>
             <div class="sched-sec" id="schedSec">
+                <div class="sched-handle" id="schedHandle">
+                    <div class="handle-bar"></div>
+                </div>
                 <div class="sched-header">
                     <div><span class="sched-title" id="dateLabel"></span><span class="sched-count"
                             id="schedCount"></span></div><button class="add-btn" onclick="openModal()">+</button>
@@ -1118,14 +1152,6 @@
                             onclick="tmpSetWatch(false)">끄기</button><button class="opt-btn sel" id="watchOn"
                             onclick="tmpSetWatch(true)">켜기</button></div>
                 </div>
-                <div style="margin:20px 0 8px;padding-top:16px;border-top:1px solid var(--border)">
-                    <div style="font-weight:600;font-size:13px;color:var(--text2);margin-bottom:12px">⚠️ 위험 영역</div>
-                    <button onclick="resetAllData()"
-                        style="width:100%;padding:12px;border-radius:10px;background:#dc2626;color:#fff;font-weight:700;border:none;cursor:pointer">🗑️
-                        모든 데이터 삭제</button>
-                    <div style="font-size:11px;color:var(--text3);margin-top:6px;text-align:center">모든 일정과 템플릿이 영구 삭제됩니다
-                    </div>
-                </div>
             </div>
             <div class="modal-footer" style="display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--border)">
                 <button class="opt-btn" onclick="cancelSet()" style="flex:1">취소</button>
@@ -1168,11 +1194,35 @@
             try { resizeCanvas(); } catch (e) { showError('resizeCanvas', e); }
             try { draw(); } catch (e) { showError('draw', e); }
             try { initDrag(); } catch (e) { showError('initDrag', e); }
+            try { initSchedHandle(); } catch (e) { showError('initSchedHandle', e); }
             try { startAlarmChecker(); } catch (e) { showError('startAlarmChecker', e); }
             try { requestNotificationPermission(); } catch (e) { showError('requestNotificationPermission', e); }
             window.onresize = resizeCanvas;
             setTimeout(resizeCanvas, 100);
             setTimeout(resizeCanvas, 500);
+        }
+        function initSchedHandle() {
+            const handle = document.getElementById('schedHandle');
+            const schedSec = document.getElementById('schedSec');
+            if (!handle || !schedSec) return;
+
+            let startY = 0;
+            let isExpanded = false;
+
+            const toggle = () => {
+                isExpanded = !isExpanded;
+                schedSec.classList.toggle('expanded', isExpanded);
+            };
+
+            handle.addEventListener('click', toggle);
+            handle.addEventListener('touchend', (e) => {
+                if (Math.abs(e.changedTouches[0].clientY - startY) < 10) {
+                    toggle();
+                }
+            });
+            handle.addEventListener('touchstart', (e) => {
+                startY = e.touches[0].clientY;
+            });
         }
         function requestNotificationPermission() { if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission(); }
         function startAlarmChecker() {
@@ -2114,14 +2164,24 @@
         function showTplPicker() {
             const list = document.getElementById('tplPickerList');
             const entries = Object.entries(tpls);
-            let html = '<div style="padding:8px;border-bottom:1px solid var(--border);margin-bottom:8px"><button onclick="saveCurrentAsTpl()" style="width:100%;padding:12px;border-radius:10px;background:var(--accent);color:#fff;font-weight:700;border:none;cursor:pointer;font-size:13px">💾 현재 일정을 템플릿으로 저장</button></div>';
-            if (!entries.length) {
-                html += '<div style="text-align:center;color:var(--text3);padding:16px;font-size:12px">저장된 템플릿 없음</div>';
-            } else {
-                html += entries.map(([k, t]) => `<div class="tpl-item" style="cursor:pointer" onclick="loadTpl('${k}')"><div class="tpl-icon">📅</div><div class="tpl-info"><div class="tpl-name">${t.name}</div><div class="tpl-desc">${t.blocks.length}개 일정</div></div></div>`).join('');
-            }
+            let html = '<div style="display:flex;gap:8px;padding:8px;border-bottom:1px solid var(--border);margin-bottom:8px">';
+            html += '<button onclick="saveCurrentAsTpl()" style="flex:1;padding:12px;border-radius:10px;background:var(--accent);color:#fff;font-weight:700;border:none;cursor:pointer;font-size:12px">💾 저장</button>';
+            html += '<button onclick="showLoadTplList()" style="flex:1;padding:12px;border-radius:10px;background:var(--input);color:var(--text);font-weight:700;border:none;cursor:pointer;font-size:12px">📂 불러오기</button>';
+            html += '</div>';
+            html += '<div id="tplSelectList" style="display:none"></div>';
             list.innerHTML = html;
             document.getElementById('tplPickerModal').classList.add('show');
+        }
+        function showLoadTplList() {
+            const selectList = document.getElementById('tplSelectList');
+            const entries = Object.entries(tpls);
+            if (!entries.length) {
+                selectList.innerHTML = '<div style="text-align:center;color:var(--text3);padding:16px;font-size:12px">저장된 템플릿이 없습니다.<br>먼저 일정을 만들고 저장해주세요.</div>';
+            } else {
+                selectList.innerHTML = '<div style="font-size:12px;color:var(--text2);padding:0 8px 8px;font-weight:600">불러올 템플릿 선택:</div>' +
+                    entries.map(([k, t]) => `<div class="tpl-item" style="cursor:pointer" onclick="loadTpl('${k}')"><div class="tpl-icon">📅</div><div class="tpl-info"><div class="tpl-name">${t.name}</div><div class="tpl-desc">${t.blocks.length}개 일정</div></div></div>`).join('');
+            }
+            selectList.style.display = 'block';
         }
         function closeTplPicker() { document.getElementById('tplPickerModal').classList.remove('show'); }
         function loadTpl(k) { const t = tpls[k]; if (t) { const b = JSON.parse(JSON.stringify(t.blocks)); b.forEach(x => x.id = Date.now() + Math.random()); sBlocks(b); closeTplPicker(); renderSched(); draw(); } }
