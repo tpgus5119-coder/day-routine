@@ -771,22 +771,6 @@
 
         .vol-row input {
             flex: 1;
-            -webkit-appearance: none;
-            appearance: none;
-            height: 6px;
-            background: var(--border);
-            border-radius: 3px;
-            outline: none;
-        }
-
-        .vol-row input::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 20px;
-            height: 20px;
-            background: var(--accent);
-            border-radius: 50%;
-            cursor: pointer;
         }
 
         .vol-val {
@@ -961,8 +945,8 @@
                         <div class="pie-icon"></div> 시간표
                     </button><button class="vbtn" id="vCal" onclick="setView('cal')">📅 달력</button></div>
                 <div class="header-btns"><button class="ibtn" onclick="openTpl()">📂</button><button class="ibtn"
-                        id="syncIcon" onclick="manualSync()" title="클라우드 동기화">☁️</button><button class="ibtn"
-                        onclick="openSet()">⚙️</button></div>
+                        style="display:none" id="syncIcon" onclick="manualSync()" title="클라우드 동기화">☁️</button><button
+                        class="ibtn" onclick="openSet()">⚙️</button></div>
             </header>
             <div class="date-bar-row"
                 style="display:flex;align-items:center;justify-content:space-between;padding:0 16px">
@@ -1110,7 +1094,7 @@
     <div class="modal-bg" id="setModal" onclick="if(event.target===this)cancelSet()">
         <div class="modal">
             <div class="modal-header">
-                <h2>⚙️ 설정</h2><button class="modal-close" onclick="cancelSet()">×</button>
+                <h2 onclick="adminTap()">⚙️ 설정</h2><button class="modal-close" onclick="cancelSet()">×</button>
             </div>
             <div class="modal-body">
                 <div class="fg"><label>테마</label>
@@ -1191,6 +1175,7 @@
             window.onresize = resizeCanvas;
             setTimeout(resizeCanvas, 100);
             setTimeout(resizeCanvas, 500);
+            checkAdmin();
         }
         function requestNotificationPermission() { if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission(); }
         function startAlarmChecker() {
@@ -1335,7 +1320,7 @@
         function selCol(i) { selColor = i; initCol('colorPicker', i) }
         function selTbCol(i) { tbColor = i; initCol('tbColorPicker', i) }
         function updVol() { document.getElementById('volVal').textContent = document.getElementById('alarmVol').value + '%' }
-        function playSound() { const snd = document.getElementById('alarmSoundSel').value, rep = document.getElementById('alarmRep').value, vol = document.getElementById('alarmVol').value / 100, m = M[snd] || M.m1; const ctx = new (window.AudioContext || window.webkitAudioContext)(); let t = ctx.currentTime; const notes = rep === 'repeat' ? [...m[0], ...m[0]] : m[0], durs = rep === 'repeat' ? [...m[1], ...m[1]] : m[1]; notes.forEach((f, i) => { const osc = ctx.createOscillator(), gain = ctx.createGain(); osc.connect(gain); gain.connect(ctx.destination); osc.frequency.value = f; osc.type = 'sine'; gain.gain.setValueAtTime(vol * .2, t); gain.gain.exponentialRampToValueAtTime(.01, t + durs[i]); osc.start(t); osc.stop(t + durs[i]); t += durs[i] }); setTimeout(() => ctx.close(), t * 1000 + 100) }
+        function playSound() { const snd = document.getElementById('alarmSoundSel').value, rep = document.getElementById('alarmRep').value, vol = document.getElementById('alarmVol').value / 100, m = M[snd] || M.m1; const ctx = new (window.AudioContext || window.webkitAudioContext)(); let t = ctx.currentTime; const notes = rep === 'repeat' ? [...m[0], ...m[0]] : m[0], durs = rep === 'repeat' ? [...m[1], ...m[1]] : m[1]; notes.forEach((f, i) => { const osc = ctx.createOscillator(), gain = ctx.createGain(); osc.connect(gain); gain.connect(ctx.destination); osc.frequency.value = f; osc.type = 'sine'; gain.gain.setValueAtTime(vol, t); gain.gain.exponentialRampToValueAtTime(.01, t + durs[i]); osc.start(t); osc.stop(t + durs[i]); t += durs[i] }); setTimeout(() => ctx.close(), t * 1000 + 100) }
         function setAlarm(on) { alarmOn = on; document.getElementById('alarmOn').classList.toggle('sel', on); document.getElementById('alarmOff').classList.toggle('sel', !on); document.getElementById('alarmOpts').classList.toggle('hide', !on) }
         function setAlarmType(type) { alarmType = type; document.getElementById('alarmSound').classList.toggle('sel', type === 'sound'); document.getElementById('alarmVib').classList.toggle('sel', type === 'vib'); document.getElementById('soundOpts').style.display = type === 'sound' ? 'block' : 'none'; }
         function applyTheme() { document.getElementById('phone').classList.toggle('dark', sets.dark); initSel(); draw(); renderSched() }
@@ -2086,6 +2071,9 @@
         function saveNewTpl() { const nm = document.getElementById('tplName').value.trim(); if (!nm) return alert('이름 입력'); if (!tplBlocks.length) return alert('일정 추가'); if (editTplKey) tpls[editTplKey] = { name: nm, desc: document.getElementById('tplDesc').value.trim() || '사용자', repeat: repDays, blocks: tplBlocks }; else tpls['t' + Date.now()] = { name: nm, desc: document.getElementById('tplDesc').value.trim() || '사용자', repeat: repDays, blocks: tplBlocks }; save(); closeNewTpl(); renderTplList() }
         function openSet() { tmpSets = JSON.parse(JSON.stringify(sets)); applyTmpTheme(); document.getElementById('setModal').classList.add('show') }
         function cancelSet() { tmpSets = null; document.getElementById('setModal').classList.remove('show') }
+        let adminTaps = 0, adminTimer = null;
+        function adminTap() { adminTaps++; clearTimeout(adminTimer); adminTimer = setTimeout(() => { adminTaps = 0; }, 1500); if (adminTaps >= 5) { adminTaps = 0; const isAdmin = localStorage.getItem('dayRoutineAdmin') === '1'; if (isAdmin) { localStorage.removeItem('dayRoutineAdmin'); document.getElementById('syncIcon').style.display = 'none'; alert('관리자 모드 해제됨'); } else { localStorage.setItem('dayRoutineAdmin', '1'); document.getElementById('syncIcon').style.display = 'inline-flex'; alert('관리자 모드 활성화! 클라우드 동기화 사용 가능'); } } }
+        function checkAdmin() { if (localStorage.getItem('dayRoutineAdmin') === '1') { document.getElementById('syncIcon').style.display = 'inline-flex'; } }
         function saveSet() { sets = tmpSets; tmpSets = null; save(); applyTheme(); if (sets.notif && 'Notification' in window && Notification.permission === 'default') Notification.requestPermission(); document.getElementById('setModal').classList.remove('show') }
         function goToday() { cur = new Date(); selId = null; renderWeek(); renderSched(); draw(); }
         function showTplPicker() { const list = document.getElementById('tplPickerList'); const entries = Object.entries(tpls); if (!entries.length) { list.innerHTML = '<div style="text-align:center;color:var(--text3);padding:16px;font-size:12px">템플릿이 없습니다</div>'; } else { list.innerHTML = entries.map(([k, t]) => `<div class="tpl-item" style="cursor:pointer" onclick="loadTpl('${k}')"><div class="tpl-icon">📅</div><div class="tpl-info"><div class="tpl-name">${t.name}</div><div class="tpl-desc">${t.blocks.length}개 일정</div></div></div>`).join(''); } document.getElementById('tplPickerModal').classList.add('show'); }
