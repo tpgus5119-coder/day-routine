@@ -412,8 +412,10 @@
             flex: 1 1 auto;
             max-height: none;
             overflow-y: auto;
-            min-height: 120px;
-            position: relative
+            min-height: 80px;
+            position: relative;
+            background: var(--bg);
+            z-index: 10
         }
 
         .sched-sec.dragging {
@@ -995,12 +997,12 @@
                 <div class="cal-grid" id="calGrid"></div>
             </div>
             <div class="sched-sec" id="schedSec">
+                <div class="sched-header">
+                    <div><span class="sched-title" id="dateLabel"></span></div>
+                    <button class="add-btn" onclick="openModal()">+</button>
+                </div>
                 <div class="sched-handle" id="schedHandle">
                     <div class="handle-bar"></div>
-                </div>
-                <div class="sched-header">
-                    <div><span class="sched-title" id="dateLabel"></span><span class="sched-count"
-                            id="schedCount"></span></div><button class="add-btn" onclick="openModal()">+</button>
                 </div>
                 <div id="schedList"></div>
             </div>
@@ -1241,10 +1243,10 @@
                 const currentY = getY(e);
                 const deltaY = startY - currentY; // positive when dragging up
 
-                const minWheelH = 50;
+                const minWheelH = 0;
                 const minSchedH = 80;
                 const maxWheelH = window.innerHeight * 0.7;
-                const maxSchedH = window.innerHeight * 0.85;
+                const maxSchedH = window.innerHeight * 0.95;
 
                 const newWheelH = Math.max(minWheelH, Math.min(maxWheelH, startWheelHeight - deltaY));
                 const newSchedH = Math.max(minSchedH, Math.min(maxSchedH, startSchedHeight + deltaY));
@@ -1476,7 +1478,7 @@
         function calNext() { cal.setMonth(cal.getMonth() + 1); renderCal() }
         function calSel(y, m, d) { cur = new Date(y, m, d); selId = null; renderWeek(); renderCal(); renderSched(); draw(); setView('wheel') }
         function fT(h) { const hour = Math.floor(h), min = Math.round((h % 1) * 60); if (sets.use12h) { const h12 = hour === 0 ? 12 : (hour > 12 ? hour - 12 : (hour === 12 ? 12 : hour)); const ampm = hour < 12 ? '오전' : '오후'; return `${ampm} ${h12}:${String(min).padStart(2, '0')}`; } return `${String(hour).padStart(2, '0')}:${String(min).padStart(2, '0')}`; }
-        function renderSched() { let b = gBlocks().sort((a, b) => { const aSpans = a.start > a.end || (a.end === 24 && a.start > 12); const bSpans = b.start > b.end || (b.end === 24 && b.start > 12); if (aSpans && !bSpans) return -1; if (!aSpans && bSpans) return 1; return a.start - b.start; }); document.getElementById('schedCount').textContent = `일정 ${b.length}`; const l = document.getElementById('schedList'); if (!b.length) { l.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px">일정이 없습니다</div>'; return } l.innerHTML = b.map(x => `<div class="sitem" style="border-left-color:${C[x.color % 7]}"><div class="stime">${fT(x.start)} - ${fT(x.end)}${x.alarm ? '<span class="alarm-badge">🔔</span>' : ''}</div><div class="sname">${x.title}${x.desc ? '<span class="sdesc"> - ' + x.desc + '</span>' : ''}</div>${x.subtasks && x.subtasks.length ? `<div class="subtasks">${x.subtasks.map((s, i) => `<div class="subtask ${s.done ? 'done' : ''}"><input type="checkbox" ${s.done ? 'checked' : ''} onclick="event.stopPropagation()" onchange="toggleSt(${x.id},${i})"><span>${s.text}</span></div>`).join('')}</div>` : ''}<div class="sactions"><button class="edit-btn" onclick="event.stopPropagation();openModal(${x.id})">✎ 편집</button><button class="del-btn" onclick="event.stopPropagation();delBlock(${x.id})" style="color:#e74c3c">× 삭제</button></div></div>`).join('') }
+        function renderSched() { let b = gBlocks().sort((a, b) => { const aSpans = a.start > a.end || (a.end === 24 && a.start > 12); const bSpans = b.start > b.end || (b.end === 24 && b.start > 12); if (aSpans && !bSpans) return -1; if (!aSpans && bSpans) return 1; return a.start - b.start; }); const l = document.getElementById('schedList'); if (!b.length) { l.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px">일정이 없습니다</div>'; return } l.innerHTML = b.map(x => `<div class="sitem" style="border-left-color:${C[x.color % 7]}"><div class="stime">${fT(x.start)} - ${fT(x.end)}${x.alarm ? '<span class="alarm-badge">🔔</span>' : ''}</div><div class="sname">${x.title}${x.desc ? '<span class="sdesc"> - ' + x.desc + '</span>' : ''}</div>${x.subtasks && x.subtasks.length ? `<div class="subtasks">${x.subtasks.map((s, i) => `<div class="subtask ${s.done ? 'done' : ''}"><input type="checkbox" ${s.done ? 'checked' : ''} onclick="event.stopPropagation()" onchange="toggleSt(${x.id},${i})"><span>${s.text}</span></div>`).join('')}</div>` : ''}<div class="sactions"><button class="edit-btn" onclick="event.stopPropagation();openModal(${x.id})">✎ 편집</button><button class="del-btn" onclick="event.stopPropagation();delBlock(${x.id})" style="color:#e74c3c">× 삭제</button></div></div>`).join('') }
         function selBlock(id) { selId = selId === id ? null : id; renderSched(); draw() }
         function delBlock(id) { sBlocks(gBlocks().filter(x => x.id !== id)); selId = null; renderSched(); draw() }
         function toggleSt(bid, idx) { const b = gBlocks(), bl = b.find(x => x.id === bid); if (bl && bl.subtasks && bl.subtasks[idx]) { bl.subtasks[idx].done = !bl.subtasks[idx].done; sBlocks(b); renderSched() } }
