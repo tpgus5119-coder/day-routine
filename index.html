@@ -426,7 +426,7 @@
         .sched-card {
             background: var(--card);
             border-radius: 20px;
-            padding: 12px;
+            padding: 16px;
             height: 100%;
             overflow-y: auto;
             display: flex;
@@ -461,7 +461,14 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 8px 0
+            padding: 8px 0;
+            gap: 8px;
+            cursor: grab;
+            touch-action: none
+        }
+
+        .sched-header:active {
+            cursor: grabbing
         }
 
         .sched-title {
@@ -992,9 +999,6 @@
                     style="font-size:11px;padding:4px 8px;margin-left:8px">오늘</button>
             </div>
             <div class="week-bar" id="weekBar"></div>
-            <div class="sched-handle" id="schedHandle">
-                <div class="handle-bar"></div>
-            </div>
             <div class="wheel-sec" id="wheelSec">
                 <div class="wcard" style="position:relative">
                     <div class="wcont"><canvas id="canvas" width="520" height="520"></canvas>
@@ -1011,9 +1015,10 @@
             </div>
             <div class="sched-sec" id="schedSec">
                 <div class="sched-card">
-                    <div class="sched-header">
+                    <div class="sched-header" id="schedHandle">
                         <div><span class="sched-title" id="dateLabel"></span><span class="sched-count"
                                 id="schedCount"></span></div>
+                        <div class="handle-bar"></div>
                         <button class="add-btn" onclick="openModal()">+</button>
                     </div>
                     <div id="schedList"></div>
