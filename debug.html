@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+    <title>Canvas Debug Test</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #1a1a2e;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-family: -apple-system, sans-serif;
+            color: white;
+            padding: 20px;
+        }
+
+        #info {
+            background: #333;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 12px;
+            width: 100%;
+            max-width: 300px;
+        }
+
+        #info div {
+            margin: 5px 0;
+        }
+
+        .success {
+            color: #4ade80;
+        }
+
+        .error {
+            color: #f87171;
+        }
+
+        #canvasContainer {
+            background: #2a2a4a;
+            border-radius: 20px;
+            padding: 15px;
+            width: 290px;
+            height: 290px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        canvas {
+            display: block;
+            background: #1e1e3a;
+            border-radius: 50%;
+        }
+
+        button {
+            margin-top: 20px;
+            padding: 15px 30px;
+            font-size: 16px;
+            background: #6366f1;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <h2 style="margin-bottom: 20px;">🧪 Canvas Debug v12</h2>
+
+    <div id="info">
+        <div id="check1">⏳ 1. Canvas 요소 확인...</div>
+        <div id="check2">⏳ 2. Context 확인...</div>
+        <div id="check3">⏳ 3. 크기 확인...</div>
+        <div id="check4">⏳ 4. 그리기 테스트...</div>
+        <div id="check5">⏳ 5. DPR 정보...</div>
+    </div>
+
+    <div id="canvasContainer">
+        <canvas id="testCanvas" width="520" height="520" style="width:260px;height:260px;"></canvas>
+    </div>
+
+    <button onclick="runTest()">🔄 테스트 다시 실행</button>
+
+    <script>
+        function log(id, success, msg) {
+            const el = document.getElementById(id);
+            el.textContent = (success ? '✅ ' : '❌ ') + msg;
+            el.className = success ? 'success' : 'error';
+        }
+
+        function runTest() {
+            // Check 1: Canvas element
+            const canvas = document.getElementById('testCanvas');
+            if (!canvas) {
+                log('check1', false, '1. Canvas 요소를 찾을 수 없음!');
+                return;
+            }
+            log('check1', true, '1. Canvas 요소 존재');
+
+            // Check 2: Context
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+                log('check2', false, '2. Context를 가져올 수 없음!');
+                return;
+            }
+            log('check2', true, '2. 2D Context 획득 성공');
+
+            // Check 3: Size
+            const w = canvas.width;
+            const h = canvas.height;
+            log('check3', w > 0 && h > 0, '3. 크기: ' + w + 'x' + h);
+
+            // Check 5: DPR
+            const dpr = window.devicePixelRatio || 1;
+            log('check5', true, '5. DPR: ' + dpr);
+
+            // Check 4: Draw
+            try {
+                ctx.clearRect(0, 0, w, h);
+
+                const cx = w / 2;
+                const cy = h / 2;
+                const r = Math.min(w, h) * 0.4;
+
+                // Draw background circle
+                ctx.beginPath();
+                ctx.arc(cx, cy, r, 0, Math.PI * 2);
+                ctx.fillStyle = '#2a2a4a';
+                ctx.fill();
+                ctx.strokeStyle = '#6366f1';
+                ctx.lineWidth = 8;
+                ctx.stroke();
+
+                // Draw colored pie slices
+                const colors = ['#FF6B6B', '#FF9F43', '#FECA57', '#48DBFB', '#1DD1A1', '#5F27CD'];
+                for (let i = 0; i < 6; i++) {
+                    const startAngle = (i / 6) * Math.PI * 2 - Math.PI / 2;
+                    const endAngle = ((i + 1) / 6) * Math.PI * 2 - Math.PI / 2;
+
+                    ctx.beginPath();
+                    ctx.moveTo(cx, cy);
+                    ctx.arc(cx, cy, r - 10, startAngle, endAngle);
+                    ctx.closePath();
+                    ctx.fillStyle = colors[i];
+                    ctx.fill();
+                }
+
+                // Draw center circle
+                ctx.beginPath();
+                ctx.arc(cx, cy, 15, 0, Math.PI * 2);
+                ctx.fillStyle = '#1e1e3a';
+                ctx.fill();
+
+                // Draw text
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 24px -apple-system, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('✓', cx, cy);
+
+                log('check4', true, '4. 그리기 성공!');
+            } catch (e) {
+                log('check4', false, '4. 그리기 실패: ' + e.message);
+            }
+        }
+
+        // Run on page load
+        window.onload = function () {
+            setTimeout(runTest, 100);
+        };
+    </script>
+</body>
+
+</html>
