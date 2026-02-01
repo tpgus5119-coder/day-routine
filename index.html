@@ -1319,6 +1319,37 @@
             localStorage.setItem('lastSyncTime', now);
             alert('동기화 완료! (' + now + ')');
         }
+
+        // 데이터 초기화 함수 (데모/테스트용)
+        async function resetAllData() {
+            if (!confirm('⚠️ 모든 일정과 템플릿이 삭제됩니다!\n정말 초기화하시겠습니까?')) return;
+
+            // LocalStorage 초기화
+            localStorage.removeItem('dr');
+            localStorage.removeItem('lastSyncTime');
+
+            // Supabase 데이터 삭제
+            if (supabaseClient) {
+                try {
+                    await supabaseClient.from('day_routine_sync').delete().eq('id', 'main');
+                    console.log('Supabase data deleted');
+                } catch (e) { console.error('Supabase delete error:', e); }
+            }
+
+            // 메모리 초기화
+            scheds = {};
+            tpls = {};
+
+            // UI 갱신
+            renderWeek(); renderCal(); renderSched(); draw();
+
+            alert('✅ 데이터가 초기화되었습니다. 새로고침해주세요.');
+            location.reload();
+        }
+
+        // 콘솔에서 호출 가능하도록 전역 노출
+        window.resetAllData = resetAllData;
+
         function gk(d) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` }
         function gBlocks() { const k = gk(cur); if (scheds[k]) return scheds[k]; const dn = DK[cur.getDay()]; for (const t of Object.values(tpls)) if (t.repeat && t.repeat.includes(dn)) return JSON.parse(JSON.stringify(t.blocks)); return [] }
         function sBlocks(b) { scheds[gk(cur)] = b; save() }
