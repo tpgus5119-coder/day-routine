@@ -1246,13 +1246,13 @@
         // Supabase Cloud Sync
         const SUPABASE_URL = 'https://vhtkjysrkeervgnojygc.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZodGtqeXNya2VlcnZnbm9qeWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk1OTk0NjQsImV4cCI6MjA4NTE3NTQ2NH0.4518vOJgxsfPCNTEc50rrOeEUBLZmAAVrbDvI9RQdpo';
-        let supabase = null;
+        let supabaseClient = null;
         let syncStatus = 'idle'; // idle, syncing, success, error
 
         function initSupabase() {
             try {
                 if (window.supabase && window.supabase.createClient) {
-                    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+                    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
                     console.log('Supabase initialized');
                     updateSyncIcon();
                 } else {
@@ -1263,12 +1263,12 @@
         }
 
         async function syncToCloud() {
-            if (!supabase) return;
+            if (!supabaseClient) return;
             syncStatus = 'syncing';
             updateSyncIcon();
             try {
                 const data = { id: 'main', blocks: scheds, templates: tpls, settings: sets, updated_at: new Date().toISOString() };
-                const { error } = await supabase.from('day_routine_sync').upsert(data);
+                const { error } = await supabaseClient.from('day_routine_sync').upsert(data);
                 syncStatus = error ? 'error' : 'success';
                 if (!error) localStorage.setItem('lastSyncTime', new Date().toLocaleString('ko-KR'));
                 if (error) console.error('Sync error:', error);
@@ -1278,11 +1278,11 @@
         }
 
         async function syncFromCloud() {
-            if (!supabase) { setTimeout(initSupabase, 100); return; }
+            if (!supabaseClient) { setTimeout(initSupabase, 100); return; }
             syncStatus = 'syncing';
             updateSyncIcon();
             try {
-                const { data, error } = await supabase.from('day_routine_sync').select('*').eq('id', 'main').single();
+                const { data, error } = await supabaseClient.from('day_routine_sync').select('*').eq('id', 'main').single();
                 if (data && !error) {
                     scheds = data.blocks || {};
                     tpls = data.templates || {};
@@ -1305,7 +1305,7 @@
         }
 
         function manualSync() {
-            if (!supabase) {
+            if (!supabaseClient) {
                 alert('클라우드 연결 중... 잠시 후 다시 시도해주세요.');
                 initSupabase();
                 return;
