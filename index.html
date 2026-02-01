@@ -1338,9 +1338,13 @@
         function resizeCanvas() { const sz = 260, cv = document.getElementById('canvas'), dpr = window.devicePixelRatio || 1; if (!cv) return; cv.width = sz * dpr; cv.height = sz * dpr; cv.style.width = sz + 'px'; cv.style.height = sz + 'px'; draw() }
         function draw() {
             const cv = document.getElementById('canvas'); if (!cv) return;
-            const ctx = cv.getContext('2d'), W = cv.width, H = cv.height, cx = W / 2, cy = H / 2, R = Math.min(W, H) * .40, dk = sets.dark, b = gBlocks(), fs = sets.fontSize;
+            const ctx = cv.getContext('2d'); if (!ctx) return;
+            const W = cv.width || 520, H = cv.height || 520, cx = W / 2, cy = H / 2, R = Math.min(W, H) * .40;
+            const dk = (typeof sets !== 'undefined' && sets) ? sets.dark : 1;
+            const fs = (typeof sets !== 'undefined' && sets && sets.fontSize) ? sets.fontSize : 1;
+            const b = (typeof gBlocks === 'function') ? gBlocks() : [];
             ctx.clearRect(0, 0, W, H);
-            // Background circle
+            // Background circle - always draw this first
             ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2);
             ctx.fillStyle = dk ? '#1e1e3a' : '#f8f8fc'; ctx.fill();
             ctx.strokeStyle = dk ? 'rgba(255,255,255,.25)' : 'rgba(0,0,0,.12)'; ctx.lineWidth = 4; ctx.stroke();
