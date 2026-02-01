@@ -405,16 +405,16 @@
 
         .sched-sec {
             padding: 0 16px 16px;
-            flex: 1;
+            flex: 1 1 auto;
             max-height: none;
             overflow-y: auto;
-            transition: flex 0.2s ease;
             min-height: 120px;
             position: relative
         }
 
-        .sched-sec.expanded {
-            flex: 3
+        .sched-sec.dragging {
+            flex: none !important;
+            transition: none !important
         }
 
         .sched-handle {
@@ -1222,7 +1222,7 @@
                 isDragging = true;
                 startY = getY(e);
                 startHeight = schedSec.offsetHeight;
-                schedSec.style.transition = 'none';
+                schedSec.classList.add('dragging');
                 document.body.style.userSelect = 'none';
                 e.preventDefault();
             };
@@ -1232,17 +1232,16 @@
                 const currentY = getY(e);
                 const deltaY = startY - currentY;
                 const newHeight = Math.max(120, Math.min(window.innerHeight * 0.7, startHeight + deltaY));
-                console.log('Drag MOVE', { deltaY, newHeight });
-                schedSec.style.flex = 'none';
+                console.log('Drag MOVE', { deltaY, newHeight, current: schedSec.style.height });
                 schedSec.style.height = newHeight + 'px';
             };
 
             const onEnd = () => {
                 if (!isDragging) return;
-                console.log('Drag END');
+                console.log('Drag END', schedSec.style.height);
                 isDragging = false;
-                schedSec.style.transition = 'height 0.2s ease';
                 document.body.style.userSelect = '';
+                // Keep dragging class to maintain height
             };
 
             // Mouse events
