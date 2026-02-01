@@ -945,8 +945,8 @@
                         <div class="pie-icon"></div> 시간표
                     </button><button class="vbtn" id="vCal" onclick="setView('cal')">📅 달력</button></div>
                 <div class="header-btns"><button class="ibtn" onclick="openTpl()">📂</button><button class="ibtn"
-                        style="display:none" id="syncIcon" onclick="manualSync()" title="클라우드 동기화">☁️</button><button
-                        class="ibtn" onclick="openSet()">⚙️</button></div>
+                        id="syncIcon" onclick="manualSync()" title="클라우드 동기화">☁️</button><button class="ibtn"
+                        onclick="openSet()">⚙️</button></div>
             </header>
             <div class="date-bar-row"
                 style="display:flex;align-items:center;justify-content:space-between;padding:0 16px">
@@ -1094,7 +1094,7 @@
     <div class="modal-bg" id="setModal" onclick="if(event.target===this)cancelSet()">
         <div class="modal">
             <div class="modal-header">
-                <h2 onclick="adminTap()">⚙️ 설정</h2><button class="modal-close" onclick="cancelSet()">×</button>
+                <h2>⚙️ 설정</h2><button class="modal-close" onclick="cancelSet()">×</button>
             </div>
             <div class="modal-body">
                 <div class="fg"><label>테마</label>
@@ -1175,7 +1175,6 @@
             window.onresize = resizeCanvas;
             setTimeout(resizeCanvas, 100);
             setTimeout(resizeCanvas, 500);
-            checkAdmin();
         }
         function requestNotificationPermission() { if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission(); }
         function startAlarmChecker() {
@@ -2071,9 +2070,6 @@
         function saveNewTpl() { const nm = document.getElementById('tplName').value.trim(); if (!nm) return alert('이름 입력'); if (!tplBlocks.length) return alert('일정 추가'); if (editTplKey) tpls[editTplKey] = { name: nm, desc: document.getElementById('tplDesc').value.trim() || '사용자', repeat: repDays, blocks: tplBlocks }; else tpls['t' + Date.now()] = { name: nm, desc: document.getElementById('tplDesc').value.trim() || '사용자', repeat: repDays, blocks: tplBlocks }; save(); closeNewTpl(); renderTplList() }
         function openSet() { tmpSets = JSON.parse(JSON.stringify(sets)); applyTmpTheme(); document.getElementById('setModal').classList.add('show') }
         function cancelSet() { tmpSets = null; document.getElementById('setModal').classList.remove('show') }
-        let adminTaps = 0, adminTimer = null;
-        function adminTap() { adminTaps++; clearTimeout(adminTimer); adminTimer = setTimeout(() => { adminTaps = 0; }, 1500); if (adminTaps >= 5) { adminTaps = 0; const isAdmin = localStorage.getItem('dayRoutineAdmin') === '1'; if (isAdmin) { localStorage.removeItem('dayRoutineAdmin'); document.getElementById('syncIcon').style.display = 'none'; alert('관리자 모드 해제됨'); } else { localStorage.setItem('dayRoutineAdmin', '1'); document.getElementById('syncIcon').style.display = 'inline-flex'; alert('관리자 모드 활성화! 클라우드 동기화 사용 가능'); } } }
-        function checkAdmin() { if (localStorage.getItem('dayRoutineAdmin') === '1') { document.getElementById('syncIcon').style.display = 'inline-flex'; } }
         function saveSet() { sets = tmpSets; tmpSets = null; save(); applyTheme(); if (sets.notif && 'Notification' in window && Notification.permission === 'default') Notification.requestPermission(); document.getElementById('setModal').classList.remove('show') }
         function goToday() { cur = new Date(); selId = null; renderWeek(); renderSched(); draw(); }
         function showTplPicker() { const list = document.getElementById('tplPickerList'); const entries = Object.entries(tpls); if (!entries.length) { list.innerHTML = '<div style="text-align:center;color:var(--text3);padding:16px;font-size:12px">템플릿이 없습니다</div>'; } else { list.innerHTML = entries.map(([k, t]) => `<div class="tpl-item" style="cursor:pointer" onclick="loadTpl('${k}')"><div class="tpl-icon">📅</div><div class="tpl-info"><div class="tpl-name">${t.name}</div><div class="tpl-desc">${t.blocks.length}개 일정</div></div></div>`).join(''); } document.getElementById('tplPickerModal').classList.add('show'); }
