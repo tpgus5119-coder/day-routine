@@ -177,18 +177,6 @@
             position: relative
         }
 
-        .notch {
-            position: absolute;
-            top: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 120px;
-            height: 28px;
-            background: #000;
-            border-radius: 0 0 18px 18px;
-            z-index: 10
-        }
-
         .app {
             flex: 1;
             display: flex;
@@ -307,18 +295,21 @@
         .wcard {
             background: var(--card);
             border-radius: 20px;
-            padding: 12px;
+            padding: 16px;
             flex: 1;
             display: flex;
             align-items: center;
             justify-content: center;
-            min-height: 280px
+            min-height: 360px
         }
 
         .wcont {
             position: relative;
-            width: 260px;
-            height: 260px
+            width: 340px;
+            height: 340px;
+            display: flex;
+            align-items: center;
+            justify-content: center
         }
 
         #canvas {
@@ -938,7 +929,6 @@
 
 <body>
     <div class="phone dark" id="phone">
-        <div class="notch"></div>
         <div class="app">
             <header class="header">
                 <div class="view-btns"><button class="vbtn active" id="vWheel" onclick="setView('wheel')">
