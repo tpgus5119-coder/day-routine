@@ -16,9 +16,10 @@
     <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap"
         rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script async src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-        // Register Service Worker
+        // Service Worker DISABLED for debugging
+        /*
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function () {
                 navigator.serviceWorker.register('sw.js').then(function (registration) {
@@ -28,6 +29,7 @@
                 });
             });
         }
+        */
     </script>
     <style>
         * {
