@@ -166,15 +166,24 @@
         }
 
         .phone {
-            width: 375px;
-            height: 812px;
-            max-height: 100vh;
+            width: 100%;
+            max-width: 430px;
+            height: 100vh;
+            height: 100dvh;
             background: var(--bg);
-            border-radius: 44px;
+            border-radius: 0;
             overflow: hidden;
             display: flex;
             flex-direction: column;
             position: relative
+        }
+
+        @media (min-width: 600px) {
+            .phone {
+                max-height: 900px;
+                border-radius: 44px;
+                margin: 20px auto
+            }
         }
 
         .app {
@@ -430,7 +439,26 @@
             height: 100%;
             overflow-y: auto;
             display: flex;
-            flex-direction: column
+            flex-direction: column;
+            cursor: grab;
+            touch-action: none
+        }
+
+        .sched-card:active {
+            cursor: grabbing
+        }
+
+        .sched-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 0 4px
+        }
+
+        .handle-row {
+            display: flex;
+            justify-content: center;
+            padding: 6px 0 10px
         }
 
         .sched-handle {
@@ -900,6 +928,40 @@
             color: var(--text3)
         }
 
+        .vol-slider-wrap {
+            display: flex;
+            align-items: center;
+            margin-top: 6px
+        }
+
+        .vol-slider {
+            flex: 1;
+            height: 6px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: var(--border);
+            border-radius: 3px;
+            outline: none
+        }
+
+        .vol-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            background: #6366f1;
+            border-radius: 50%;
+            cursor: pointer
+        }
+
+        .vol-slider::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            background: #6366f1;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer
+        }
+
         .tpl-actions {
             display: flex;
             gap: 4px
@@ -1014,12 +1076,14 @@
                 <div class="cal-grid" id="calGrid"></div>
             </div>
             <div class="sched-sec" id="schedSec">
-                <div class="sched-card">
-                    <div class="sched-header" id="schedHandle">
+                <div class="sched-card" id="schedHandle">
+                    <div class="sched-header-row">
                         <div><span class="sched-title" id="dateLabel"></span><span class="sched-count"
                                 id="schedCount"></span></div>
-                        <div class="handle-bar"></div>
                         <button class="add-btn" onclick="openModal()">+</button>
+                    </div>
+                    <div class="handle-row">
+                        <div class="handle-bar"></div>
                     </div>
                     <div id="schedList"></div>
                 </div>
@@ -1165,6 +1229,13 @@
                     <div class="opt-row"><button class="opt-btn" id="notifOff"
                             onclick="tmpSetNotif(false)">끄기</button><button class="opt-btn sel" id="notifOn"
                             onclick="tmpSetNotif(true)">켜기</button></div>
+                </div>
+                <div class="fg"><label>🔊 알람 소리 크기</label>
+                    <div class="vol-slider-wrap">
+                        <input type="range" id="volSlider" min="0" max="100" value="80" class="vol-slider"
+                            oninput="tmpSetVol(this.value)">
+                        <span id="volLabel" style="font-size:11px;color:var(--text3);margin-left:8px">80%</span>
+                    </div>
                 </div>
                 <div class="fg"><label>📲 위젯</label>
                     <div class="opt-row"><button class="opt-btn" id="widgetOff"
@@ -1328,8 +1399,9 @@
             // Show in-app popup
             showAlarmPopup(block);
             // Sound or Vibration based on alarmType
-            if (block.alarmType === 'sound' && block.sound && block.volume > 0) {
-                const vol = (block.volume || 50) / 100;
+            if (block.alarmType === 'sound' && block.sound) {
+                const globalVol = sets.volume !== undefined ? sets.volume : 80;
+                const vol = Math.min(1, (globalVol / 100) * 1.5);
                 const m = M[block.sound] || M.m1;
                 const ctx = new (window.AudioContext || window.webkitAudioContext)();
                 let t = ctx.currentTime;
@@ -2233,8 +2305,9 @@
         function updTbStask(i, t) { tbStasks[i].text = t }
         function saveTplBlock() { const title = document.getElementById('tbTitle').value.trim(); if (!title) return alert('제목 입력'); const sh = +document.getElementById('tbSH').value, sm = +document.getElementById('tbSM').value, eh = +document.getElementById('tbEH').value, em = +document.getElementById('tbEM').value; let st = sh + sm / 60, en = eh + em / 60; if (en === 0) en = 24; const dur = (en >= st) ? (en - st) : (24 - st + en); if (dur < 1 / 60) return alert('최소 1분'); document.querySelectorAll('#tbStaskList input[type="text"]').forEach((inp, i) => { if (tbStasks[i]) tbStasks[i].text = inp.value }); tplBlocks.push({ id: Date.now(), title, start: st, end: en, color: tbColor, subtasks: tbStasks.filter(s => s.text.trim()) }); closeTplBlock(); renderTplBlockList() }
         function saveNewTpl() { const nm = document.getElementById('tplName').value.trim(); if (!nm) return alert('이름 입력'); if (!tplBlocks.length) return alert('일정 추가'); if (editTplKey) tpls[editTplKey] = { name: nm, desc: document.getElementById('tplDesc').value.trim() || '사용자', repeat: repDays, blocks: tplBlocks }; else tpls['t' + Date.now()] = { name: nm, desc: document.getElementById('tplDesc').value.trim() || '사용자', repeat: repDays, blocks: tplBlocks }; save(); closeNewTpl(); renderTplList() }
-        function openSet() { tmpSets = JSON.parse(JSON.stringify(sets)); applyTmpTheme(); document.getElementById('setModal').classList.add('show') }
+        function openSet() { tmpSets = JSON.parse(JSON.stringify(sets)); applyTmpTheme(); const vs = document.getElementById('volSlider'), vl = document.getElementById('volLabel'); if (vs && vl) { const v = tmpSets.volume !== undefined ? tmpSets.volume : 80; vs.value = v; vl.textContent = v + '%'; } document.getElementById('setModal').classList.add('show') }
         function cancelSet() { tmpSets = null; document.getElementById('setModal').classList.remove('show') }
+        function tmpSetVol(v) { if (tmpSets) tmpSets.volume = +v; const vl = document.getElementById('volLabel'); if (vl) vl.textContent = v + '%'; }
         function saveSet() { sets = tmpSets; tmpSets = null; save(); applyTheme(); if (sets.notif && 'Notification' in window && Notification.permission === 'default') Notification.requestPermission(); document.getElementById('setModal').classList.remove('show') }
         function goToday() { cur = new Date(); selId = null; renderWeek(); renderSched(); draw(); }
         function showTplPicker() {

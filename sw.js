@@ -1,56 +1,38 @@
-const CACHE_NAME = 'day-routine-v38';
+const CACHE_NAME = 'day-routine-v39';
 const urlsToCache = [
     './',
     './index.html',
-    './manifest.json',
-    './icon-192.png',
-    './icon-512.png'
+    './manifest.json'
 ];
 
-// Install event
-self.addEventListener('install', (event) => {
-    event.waitUntil(
+self.addEventListener('install', e => {
+    e.waitUntil(
         caches.open(CACHE_NAME)
-            .then((cache) => cache.addAll(urlsToCache))
-            .catch((err) => console.log('Cache addAll failed:', err))
+            .then(cache => cache.addAll(urlsToCache))
+            .then(() => self.skipWaiting())
     );
-    self.skipWaiting();
 });
 
-// Fetch event - Network first, fallback to cache
-self.addEventListener('fetch', (event) => {
-    event.respondWith(
-        fetch(event.request)
-            .then((response) => {
-                // If valid response, clone and cache it
-                if (response && response.status === 200) {
-                    const responseToCache = response.clone();
-                    caches.open(CACHE_NAME)
-                        .then((cache) => {
-                            cache.put(event.request, responseToCache);
-                        });
+self.addEventListener('activate', e => {
+    e.waitUntil(
+        caches.keys().then(keys => 
+            Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
+        ).then(() => self.clients.claim())
+    );
+});
+
+self.addEventListener('fetch', e => {
+    const url = new URL(e.request.url);
+    if (url.protocol === 'chrome-extension:') return;
+    e.respondWith(
+        caches.match(e.request)
+            .then(r => r || fetch(e.request).then(resp => {
+                if (resp.status === 200 && url.protocol.startsWith('http')) {
+                    const clone = resp.clone();
+                    caches.open(CACHE_NAME).then(c => c.put(e.request, clone));
                 }
-                return response;
-            })
-            .catch(() => {
-                // Fallback to cache if network fails
-                return caches.match(event.request);
-            })
+                return resp;
+            }))
+            .catch(() => caches.match('./index.html'))
     );
-});
-
-// Activate event - clean old caches
-self.addEventListener('activate', (event) => {
-    event.waitUntil(
-        caches.keys().then((cacheNames) => {
-            return Promise.all(
-                cacheNames.map((cacheName) => {
-                    if (cacheName !== CACHE_NAME) {
-                        return caches.delete(cacheName);
-                    }
-                })
-            );
-        })
-    );
-    self.clients.claim();
 });
