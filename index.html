@@ -844,6 +844,34 @@
 
         .vol-row input {
             flex: 1;
+            -webkit-appearance: none;
+            appearance: none;
+            height: 6px;
+            background: linear-gradient(to right, var(--accent) 0%, var(--accent) var(--val, 70%), var(--border) var(--val, 70%), var(--border) 100%);
+            border-radius: 3px;
+            outline: none;
+            margin: 0
+        }
+
+        .vol-row input::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: var(--accent);
+            border-radius: 50%;
+            cursor: pointer;
+            border: 3px solid #fff;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, .3)
+        }
+
+        .vol-row input::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: var(--accent);
+            border-radius: 50%;
+            cursor: pointer;
+            border: 3px solid #fff;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, .3)
         }
 
         .vol-val {
@@ -1554,8 +1582,8 @@
         function initCol(id, sel) { document.getElementById(id).innerHTML = C.map((c, i) => `<div class="copt ${i === sel ? 'sel' : ''}" onclick="${id === 'colorPicker' ? 'selCol' : 'selTbCol'}(${i})" style="background:${c}"></div>`).join('') }
         function selCol(i) { selColor = i; initCol('colorPicker', i) }
         function selTbCol(i) { tbColor = i; initCol('tbColorPicker', i) }
-        function updVol() { document.getElementById('volVal').textContent = document.getElementById('alarmVol').value + '%' }
-        function playSound() { const snd = document.getElementById('alarmSoundSel').value, rep = document.getElementById('alarmRep').value, vol = document.getElementById('alarmVol').value / 100, m = M[snd] || M.m1; const ctx = new (window.AudioContext || window.webkitAudioContext)(); let t = ctx.currentTime; const notes = rep === 'repeat' ? [...m[0], ...m[0]] : m[0], durs = rep === 'repeat' ? [...m[1], ...m[1]] : m[1]; notes.forEach((f, i) => { const osc = ctx.createOscillator(), gain = ctx.createGain(); osc.connect(gain); gain.connect(ctx.destination); osc.frequency.value = f; osc.type = 'sine'; gain.gain.setValueAtTime(vol, t); gain.gain.exponentialRampToValueAtTime(.01, t + durs[i]); osc.start(t); osc.stop(t + durs[i]); t += durs[i] }); setTimeout(() => ctx.close(), t * 1000 + 100) }
+        function updVol() { const v = document.getElementById('alarmVol').value; document.getElementById('volVal').textContent = v + '%'; document.getElementById('alarmVol').style.setProperty('--val', v + '%'); }
+        function playSound() { const snd = document.getElementById('alarmSoundSel').value, rep = document.getElementById('alarmRep').value, vol = Math.min(1, (document.getElementById('alarmVol').value / 100) * 1.5), m = M[snd] || M.m1; const ctx = new (window.AudioContext || window.webkitAudioContext)(); let t = ctx.currentTime; const notes = rep === 'repeat' ? [...m[0], ...m[0]] : m[0], durs = rep === 'repeat' ? [...m[1], ...m[1]] : m[1]; notes.forEach((f, i) => { const osc = ctx.createOscillator(), gain = ctx.createGain(); osc.connect(gain); gain.connect(ctx.destination); osc.frequency.value = f; osc.type = 'sine'; gain.gain.setValueAtTime(vol * .5, t); gain.gain.exponentialRampToValueAtTime(.01, t + durs[i]); osc.start(t); osc.stop(t + durs[i]); t += durs[i] }); setTimeout(() => ctx.close(), t * 1000 + 100) }
         function setAlarm(on) { alarmOn = on; document.getElementById('alarmOn').classList.toggle('sel', on); document.getElementById('alarmOff').classList.toggle('sel', !on); document.getElementById('alarmOpts').classList.toggle('hide', !on) }
         function setAlarmType(type) { alarmType = type; document.getElementById('alarmSound').classList.toggle('sel', type === 'sound'); document.getElementById('alarmVib').classList.toggle('sel', type === 'vib'); document.getElementById('soundOpts').style.display = type === 'sound' ? 'block' : 'none'; }
         function applyTheme() { document.getElementById('phone').classList.toggle('dark', sets.dark); initSel(); draw(); renderSched() }
